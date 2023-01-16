@@ -1,0 +1,245 @@
+#MariaDB로 따라하며 배우는 SQL 프로그래밍 
+
+# CHAPTER 11: 데이터 암호화와 복호화
+
+# P493: `members` 테이블의 `passwd` 열의 값을 업데이트하고 확인
+UPDATE members
+    SET passwd = SHA2('kb1234!', 256), 
+        passwdmdt = CURRENT_TIMESTAMP()
+    WHERE memid = 'hong1';
+
+SELECT memid, memname, passwd, LENGTH(passwd), passwdmdt
+    FROM members 
+    WHERE memid = 'hong1';
+
+
+# P494: 암호가 일치하는 사용자 검색
+SELECT COUNT(*) 
+    FROM members
+    WHERE memid = 'hong1' AND 
+          passwd = SHA2('kb1234!', 256);
+
+# P495: 암호변경 이력 관리를 위한 `passwd_history` 테이블 생성 
+CREATE TABLE `passwd_history`  (
+        `seq`  INT(11) NOT NULL AUTO_INCREMENT, 
+        `memid` VARCHAR(10) NOT NULL 
+                            COLLATE 'utf8mb4_general_ci',
+        `passwd_old` VARCHAR(64) NULL DEFAULT NULL 
+                            COLLATE 'utf8mb4_general_ci', 
+         `insdtm`  DATETIME  NOT NULL DEFAULT CURRENT_TIMESTAMP(), 
+         UNIQUE INDEX `idx_seq` (`seq`) USING BTREE,
+         INDEX `idx_memid` (`memid`) USING BTREE
+)
+COLLATE='utf8mb4_general_ci'
+ENGINE=InnoDB
+;
+
+# P495: 예로 사용할 사용자 추가 
+# 예로 사용할 사용자 등록: 사용자ID는 ‘abcdef’, 비밀번호는 ‘a12345@@’로 한다. 
+INSERT INTO members (memid, memname, passwd)
+       VALUES ('abcdef', '추가자2', SHA2('a12345@@', 256));
+
+# P496: passwd 변경 이력을 위해 passwd_history 테이블로 기존 passwd 데이터를 
+#       추가하고, 업데이트
+# `members` 테이블로부터 지정한 사용자 ‘abcdef’의 필요한 데이터를 서브 쿼리를 
+# 사용해서 검색한 결과를 `passwd_history` 테이블에 입력한다. 
+INSERT INTO passwd_history (memid, passwd_old)
+    SELECT memid, passwd 
+        FROM members WHERE memid = 'abcdef';
+
+# `members` 테이블에서 지정한 사용자 ‘abcdef’의 비밀번호 업데이트, 
+# 새 비밀번호는 ‘b6789!!’
+UPDATE members 
+    SET passwd = SHA2('b6789!!', 256), 
+        passwdmdt = CURRENT_TIMESTAMP() 
+    WHERE memid = 'abcdef';
+
+# P496: 한 번 더 passwd 변경 
+# `members` 테이블로부터 지정한 사용자 ‘abcdef’의 한번 더 변경한다. 
+# `passwd_history` 테이블에 저장되는 이력을 보기 위함이다.
+INSERT INTO passwd_history (memid, passwd_old)
+    SELECT memid, passwd 
+        FROM members WHERE memid = 'abcdef';
+
+# `members` 테이블에서 지정한 사용자 ‘abcdef’의 두 번째 비밀번호 업데이트
+# 새 비밀번호는 ‘c4567##’
+UPDATE members 
+    SET passwd = SHA2('c4567##', 256), 
+        passwdmdt = CURRENT_TIMESTAMP() 
+    WHERE memid = 'abcdef';
+
+# P497: 마지막으로 변경된 비밀번호를 사용하여 조회한다. 
+SELECT COUNT(*)
+    FROM members
+    WHERE memid = 'abcdef' AND passwd = SHA2('c4567##', 256);
+
+# P497: passwd_history 테이블에서 변경이력 조회 
+# 비밀번호 변경 이력을 저장하는 `passwd_history` 테이블에 
+# 해당 사용자의 데이터 검색 
+SELECT COUNT(*)
+    FROM passwd_history
+    WHERE memid = 'abcdef';
+
+# P497: 비밀번호 변경 이력 조회를 위한 저장 프로시저
+DELIMITER $$
+CREATE OR REPLACE 
+    PROCEDURE SP_AVAIABLEPWD (IN p_memid VARCHAR(10), 
+                              IN p_new_pwd VARCHAR(64), 
+                              OUT ans BIT(1) )
+# IN 파라미터로 사용자ID와 변경하려는 새 패스워드를 받는다. 
+# OUT 파라미터로 변경하려는 새 패스워드가 이력에 있으면 FALSE, 없으면 TRUE를 설정
+BEGIN
+    # 지역변수 선언
+    DECLARE l_seq INT;
+    DECLARE l_memid VARCHAR(10);
+    DECLARE l_old_pwd VARCHAR(64);
+
+    # 커서 정의: 비밀번호를 변경하려는 사용자ID의 이력을 조회하여 커서 생성 
+    DECLARE cur_pwd_history CURSOR FOR
+        SELECT seq, memid, passwd_old 
+            FROM passwd_history WHERE memid = 'abcdef';
+
+    # 커서 사용 중, EOF에 커서가 위치할 때 NOT FOUND HANDLER 설정
+    # NOT FOUND 상태가 되면 ans = TRUE로 설정
+    DECLARE continue HANDLER FOR NOT FOUND SET ans = TRUE;
+
+    OPEN cur_pwd_history;    # 커서 Open
+
+    SET ans = FALSE;         # 반환값으로 사용할 ans = FALSE로 설정
+
+    read_loop: LOOP
+                   # 커서로부터 한 행을 읽어 지역변수에 할당  
+                   FETCH cur_pwd_history INTO l_seq, l_memid, 
+                                              l_old_pwd;
+
+                   # 비밀번호 변경이력 테이블에서 읽은 값과 새로 설정할 
+                   # 비밀번호를 비교하여 같거나 
+                   # 또는 ans = TRUE이면 커서 반복을 탈출
+                   IF l_old_pwd = p_new_pwd OR ans = TRUE THEN
+                       LEAVE read_loop;
+                   END IF;
+
+               END LOOP read_loop;
+
+    # 커서 닫기 
+    CLOSE cur_pwd_history;
+
+END
+$$
+DELIMITER ;
+
+
+# P499: SP_AVAILABLE_PWD 저장 프로시저 호출
+DELIMITER $$
+BEGIN NOT ATOMIC
+
+# 변경하려는 비밀번호가 ‘c4567##’인 경우 
+# `members` 테이블에서 현재 사용하는 비밀번호 조회 
+SET @cur_pwd = NULL;
+SELECT passwd INTO @cur_pwd 
+    FROM members WHERE memid = 'abcdef';
+
+# `password_history` 테이블에서 변경 이력 조회 
+# 반환된 @rans = 1이면 변경가능, @rans = 0이면 변경 불가능
+CALL SP_AVAILABLEPWD('abcdef', SHA2('c4567##', 256), @rans);
+
+IF @cur_pwd != SHA2('c4567##', 256) AND @rans = 1 THEN
+    # 변경하려는 비밀번호가 현재 사용 중인 비밀번호와 다르고
+    # 변경 이력에서 사용된 경우가 없다면, 현재 비밀번호를 변경이력 테이블로 입력하고
+    # `members` 테이블이 비밀번호 업데이트 
+    INSERT INTO passwd_history(memid, passwd_old)
+        SELECT memid, passwd 
+            FROM members WHERE memid = 'abcdef';
+    UPDATE members
+        SET passwd = SHA2('c4567##', 256),
+            passwdmdt = CURRENT_TIMESTAMP()
+        WHERE memid = 'abcdef';
+    SELECT '비밀번호 변경 성공' AS '결과';
+ELSE
+    SELECT '비밀번호 변경 실패' AS '결과';
+END IF;
+
+END $$
+DELIMITER ;
+
+# P500: 새로운 비밀번호를 사용하여 SP_AVAILABLE_PWD 저장 프로시저 호출
+DELIMITER $$
+BEGIN NOT ATOMIC
+
+# 변경하려는 비밀번호가 ‘d7788$$’인 경우 
+# `members` 테이블에서 현재 사용하는 비밀번호 조회 
+SET @cur_pwd = NULL;
+SELECT passwd INTO @cur_pwd 
+    FROM members WHERE memid = 'abcdef';
+
+# `password_history` 테이블에서 변경 이력 조회 
+# 반환된 @rans = 1이면 변경가능, @rans = 0이면 변경 불가능
+CALL SP_AVAILABLEPWD('abcdef', SHA2('d7788$$', 256), @rans);
+
+IF @cur_pwd != SHA2('d7788$$', 256) AND @rans = 1 THEN
+    # 변경하려는 비밀번호가 현재 사용 중인 비밀번호와 다르고
+    # 변경 이력에서 사용된 경우가 없다면, 현재 비밀번호를 변경이력 테이블로 입력하고
+    # `members` 테이블이 비밀번호 업데이트 
+    INSERT INTO passwd_history(memid, passwd_old)
+        SELECT memid, passwd 
+            FROM members WHERE memid = 'abcdef';
+    UPDATE members
+        SET passwd = SHA2('d7788$$', 256),
+            passwdmdt = CURRENT_TIMESTAMP()
+        WHERE memid = 'abcdef';
+    SELECT '비밀번호 변경 성공' AS '결과';
+ELSE
+    SELECT '비밀번호 변경 실패' AS '결과';
+END IF;
+
+END $$
+DELIMITER ;
+
+# P501: 양방향 암호화를 위한 AES_ENCRYPT 함수 사용
+SELECT AES_ENCRYPT('abc1234', 'abcd');
+
+# P501: 양방향 암호화를 위한 AES_ENCRYPT 함수의 결과를 16진수로 변환
+SELECT HEX(AES_ENCRYPT('abc1234', 'abcd'));
+
+# P502: 복호화
+SELECT AES_DECRYPT(UNHEX(HEX(AES_ENCRYPT('abc1234', 'abcd'))), 
+                   'abcd');
+
+# P502: `members` 테이블의 주민등록번호에 양방향 암호화 적용
+UPDATE members
+    SET jumin = 
+            HEX(AES_ENCRYPT('9502011234567', SHA2('!@#$', 256)))
+    WHERE memid = 'hong1';
+
+# P502: 양방향 암호화 결과 확인
+SELECT memid, jumin, LENGTH(jumin) 
+    FROM members 
+    WHERE memid = 'hong1';
+
+# P503: 복호화 결과 확인
+SELECT memid, AES_DECRYPT(UNHEX(jumin), SHA2('!@#$', 256))
+    FROM members 
+    WHERE memid = 'hong1';
+
+# P503: 변수 설정 
+SET @my_key = '!@#$';
+
+# P504: 변수를 사용한 암/복호화 
+# 변수의 값을 사용한 양방향 암호화 
+UPDATE members
+    SET jumin = 
+            HEX(AES_ENCRYPT(‘9502011234567’, SHA2(@my_key, 256)))
+    WHERE memid = ‘hong2’;
+
+# 양방향 암호화 결과 확인
+SELECT memid, jumin, LENGTH(jumin) 
+    FROM members 
+    WHERE memid = ‘hong1’;
+
+# 양방향 복호화 결과 확인 
+SELECT memid, 
+       AES_DECRYPT(UNHEX(jumin), SHA2(@my_key, 256)) AS jumin
+    FROM members 
+    WHERE memid = ‘hong1’;
+
+

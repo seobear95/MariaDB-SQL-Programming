@@ -1,0 +1,598 @@
+
+#MariaDB로 따라하며 배우는 SQL 프로그래밍 
+
+#Chapter 5 기본 SQL
+
+#P73: 그래픽 모드로 생성하는 데이터베이스 `kamebook`을 위한 쿼리문(페이지 76)
+CREATE DATABASE `kamebook!40100 COLLATE 'utf8mb4_general_ci' */
+
+
+#P75: 그래픽 모드로 삭제하는 데이터베이스 'kamebook'을 위한 쿼리문
+DROP DATABASE `kamebook`;
+
+
+# P86/P90: `members` 테이블 생성 쿼리문
+CREATE TABLE `members` (
+	`memid` VARCHAR(9) NOT NULL COMMENT '회원ID'
+		COLLATE 'utf8mb4_general_ci',
+	`memname` VARCHAR(20) NOT NULL COMMENT '회원명'
+		COLLATE 'utf8mb4_general_ci',
+	`passwd` VARCHAR(128) NULL DEFAULT NULL
+		COMMENT '비밀번호' COLLATE 'utf8mb4_general_ci',
+	`passwdmdt` DATETIME NULL DEFAULT NULL COMMENT '비밀번호변경일시',
+	`jumin` VARCHAR(64) NULL DEFAULT NULL COMMENT '주민등록번호'
+		COLLATE 'utf8mb4_general_ci',
+	`addr` VARCHAR(100) NULL DEFAULT NULL COMMENT '주소'
+		COLLATE 'utf8mb4_general_ci',
+	`birthday` DATE NULL DEFAULT NULL COMMENT '생년월일',
+	`jobcd` CHAR(1) NULL DEFAULT NULL COMMENT '직업코드'
+		COLLATE 'utf8mb4_general_ci',
+	`mileage` DECIMAL(7,0) UNSIGNED NULL DEFAULT '0' COMMENT '마일리지',
+	`stat` ENUM('Y','N') NOT NULL DEFAULT 'Y' COMMENT '상태'
+		COLLATE 'utf8mb4_general_ci',
+	`enterdtm` DATETIME NOT NULL DEFAULT current_timestamp()
+		COMMENT '가입일시',
+	`leavedtm` DATETIME NULL DEFAULT NULL COMMENT '탈퇴일시',
+	PRIMARY KEY (`memid`)
+)
+COLLATE='utf8mb4_general_ci'
+ENGINE=InnoDB
+;
+
+
+# P89: `members` 테이블 삭제 쿼리문 
+DROP TABLE `members`;
+
+
+# P91: `goodsinfo` 테이블 생성 쿼리문
+CREATE TABLE `goodsinfo` (
+	`goodscd` CHAR(5) NOT NULL COMMENT '상품코드'
+		COLLATE 'utf8mb4_general_ci',
+	`goodsname` VARCHAR(20) NOT NULL COMMENT '상품명'
+		COLLATE 'utf8mb4_general_ci',
+	`unitcd` CHAR(2) NULL DEFAULT NULL COMMENT '단위코드'
+		COLLATE 'utf8mb4_general_ci',
+	`unitprice` DECIMAL(5,0) UNSIGNED NOT NULL DEFAULT '0'
+		COMMENT '단가',
+	`stat` ENUM('Y','N') NOT NULL DEFAULT 'Y' COMMENT '상태'
+		COLLATE 'utf8mb4_general_ci',
+	`insdtm` DATETIME NOT NULL DEFAULT current_timestamp()
+		COMMENT '등록일시',
+	`moddtm` DATETIME NULL DEFAULT NULL COMMENT '탈퇴일시',
+	PRIMARY KEY (`goodscd`) USING BTREE
+)
+COLLATE='utf8mb4_general_ci'
+ENGINE=InnoDB
+;
+
+
+# P92: `order_h` 테이블 생성 쿼리문
+CREATE TABLE `order_h` (
+	`orderno` CHAR(9) NOT NULL COMMENT '주문번호'
+		COLLATE 'utf8mb4_general_ci',
+	`orddt` DATE NOT NULL COMMENT '주문일',
+	`memid` VARCHAR(10) NOT NULL COMMENT '주문자ID'
+		COLLATE 'utf8mb4_general_ci',
+	`ordamt` DECIMAL(7,0) UNSIGNED NOT NULL DEFAULT '0'
+		COMMENT '주문총액',
+	`cancelyn` ENUM('Y','N') NOT NULL DEFAULT 'N'
+		COMMENT '주문상태' COLLATE 'utf8mb4_general_ci',
+	`canceldtm` DATETIME NULL DEFAULT NULL COMMENT '주문취소일시',
+	`insdtm` DATETIME NOT NULL DEFAULT current_timestamp()
+		COMMENT '등록일시',
+	`moddtm` DATETIME NULL DEFAULT NULL COMMENT '변경일시',
+	PRIMARY KEY (`orderno`) USING BTREE
+)
+COLLATE='utf8mb4_general_ci'
+ENGINE=InnoDB
+;
+
+
+# P94: `order_d` 테이블 생성 쿼리문
+CREATE TABLE `order_d` (
+	`orderno` CHAR(9) NOT NULL COMMENT '주문번호'
+		COLLATE 'utf8mb4_general_ci',
+	`goodscd` CHAR(5) NOT NULL COMMENT '상품코드'
+		COLLATE 'utf8mb4_general_ci',
+	`unitcd` CHAR(2) NULL DEFAULT NULL COMMENT '단위코드'
+		COLLATE 'utf8mb4_general_ci',
+	`unitprice` DECIMAL(5,0) UNSIGNED NOT NULL DEFAULT '0'
+		COMMENT '단가',
+	`qty` DECIMAL(3,0) UNSIGNED NOT NULL DEFAULT '0' COMMENT '주문수량',
+	`amt` DECIMAL(7,0) UNSIGNED NOT NULL DEFAULT '0' COMMENT '주문금액',
+	`insdtm` DATETIME NOT NULL DEFAULT current_timestamp()
+		COMMENT '등록일시',
+	`moddtm` DATETIME NULL DEFAULT NULL COMMENT '변경일시',
+	PRIMARY KEY (`orderno`, `goodscd`) USING BTREE
+)
+COLLATE='utf8mb4_general_ci'
+ENGINE=InnoDB
+;
+
+
+# P95: 테이블 정보 확인과 엑셀로 저장하기위한 DESCRIBE 문
+DESCRIBE `members`;
+DESCRIBE `goodsinfo`;
+DESCRIBE `order_h`;
+DESCRIBE `order_d`;
+
+
+# P99: `members` 테이블에 데이터 입력: 모두 6행의 데이터 
+# P99: 그래픽 모드에서 데이터 입력
+INSERT  INTO `members` 
+	(`memid`, `memname`, `addr`, `birthday`, `jobcd`, `mileage`, `enterdtm`) 
+	VALUES
+	('hong1', '홍길동', '인천 동구 송림동', '2000-05-08', '2', 500, '2022-03-01 14:10:27');
+
+INSERT  INTO `members` 
+	(`memid`, `memname`, `addr`, `birthday`, `jobcd`, `mileage`, `enterdtm`) 
+	VALUES
+	('hong2', '홍길동', '서울 강남구 신사동', '1990-01-05', '9', 1000,  '2022-03-01 14:11:50');
+
+INSERT  INTO `members` 
+	(`memid`, `memname`, `addr`, `birthday`, `jobcd`, `enterdtm`) 
+	VALUES
+	('kim1', '김갑수', '인천 연수구 연수동', '2003-07-01', '1', '2022-03-01 14:12:39');
+
+# P100: 그래픽 모드에서 입력한 데이터를 로그 영역에서 확인
+INSERT  INTO `members` 
+	(`memid`, `memname`, `addr`, `birthday`, `jobcd`, `enterdtm`) 
+	VALUES
+	('park', '박기자', '경기 부천시', '2002-09-30', '3', '2022-03-01 14:13:16');
+
+# P101: SQL 문으로 추가 데이터 입력하기  
+INSERT  INTO `members` 
+	(`memid`, `memname`, `addr`, `birthday`, `jobcd`, `enterdtm`) 
+	VALUES
+	('seo', '서갑돌',  '인천 동구', '1998-03-10', '1', '2022-03-01 14:08:41');
+
+INSERT  INTO `members` 
+	(`memid`, `memname`, `addr`, `birthday`, `jobcd`, `enterdtm`) 
+	VALUES
+	('Taeh', '태현', '경기 수원시', '2002-10-15', '4', '2022-03-01 14:15:10');
+
+
+# P102: `goodsinfo` 테이블에 데이터 입력하기: 모두 6행의 데이터
+# P103: 그래픽 모드에서 입력한 데이터를 로그 영역에서 확인
+INSERT INTO `kamebook`.`goodsinfo` 
+    (`goodscd`, `goodsname`, `unitcd`, `unitprice`, `insdtm`) 
+    VALUES ('GDS01', '노트', '01', '2000', '2022-03-01 14:42:44');
+
+# P103: SQL 문으로 추가 데이터 입력하기  
+INSERT INTO `kamebook`.`goodsinfo` 
+    (`goodscd`, `goodsname`, `unitcd`, `unitprice`, `insdtm`) 
+    VALUES ('GDS02', '연필', '02', '100', '2022-03-01 14:43:17');
+
+INSERT INTO `kamebook`.`goodsinfo` 
+    (`goodscd`, `goodsname`, `unitcd`, `unitprice`, `insdtm`) 
+    VALUES ('GDS03', '복사지', '03', '5000', '2022-03-01 14:43:47');
+
+INSERT INTO `kamebook`.`goodsinfo` 
+    (`goodscd`, `goodsname`, `unitcd`, `unitprice`, `insdtm`) 
+    VALUES ('GDS04', '볼펜', '02', '500', '2022-03-01 14:44:13');
+
+INSERT INTO `kamebook`.`goodsinfo` 
+    (`goodscd`, `goodsname`, `unitcd`, `unitprice`, `insdtm`) 
+    VALUES ('GDS05', '네임펜', '02', '1000', '2022-03-01 14:44:30');
+
+INSERT INTO `kamebook`.`goodsinfo` 
+    (`goodscd`, `goodsname`, `unitcd`, `unitprice`, `insdtm`) 
+    VALUES ('GDS06', '크레파스', '02', '1500', '2022-03-01 14:45:30');
+
+
+# P105: `order_h` 테이블에 SQL 문으로 데이터 입력하기: 모두 9행의 데이터 
+INSERT INTO `kamebook`.`order_h` 
+    (`orderno`, `orddt`, `memid`, `ordamt`, `insdtm`) VALUES
+    ('202201001', '2022-01-24', 'seo', '10000', '2022-03-01 14:49:07');
+
+INSERT INTO `kamebook`.`order_h` 
+    (`orderno`, `orddt`, `memid`, `ordamt`, `insdtm`) VALUES
+    ('202201002', '2022-01-24', 'hong2', '15000', '2022-03-01 14:50:35');
+
+INSERT INTO `kamebook`.`order_h` 
+    (`orderno`, `orddt`, `memid`, `ordamt`, `insdtm`) VALUES
+    ('202201003', '2022-01-25', 'hong1', '20000', 
+     '2022-03-01 14:51:19');
+
+INSERT INTO `kamebook`.`order_h` 
+    (`orderno`, `orddt`, `memid`, `ordamt`, `insdtm`) VALUES
+    ('202201004', '2022-01-25', 'kim1', '10000', 
+     '2022-03-01 14:51:58');
+
+INSERT INTO `kamebook`.`order_h` 
+    (`orderno`, `orddt`, `memid`, `ordamt`, `cancelyn`, 
+     `canceldtm`, `insdtm`) VALUES
+    ('202201005', '2022-01-25', 'park', '5000', 'Y', 
+     '2022-01-25 00:00:00', '2022-03-01 14:53:12');
+
+INSERT INTO `kamebook`.`order_h` 
+    (`orderno`, `orddt`, `memid`, `ordamt`, `insdtm`) VALUES
+    ('202202001', '2022-02-01', 'hong1', '30000', '2022-03-01 14:54:09');
+
+INSERT INTO `kamebook`.`order_h` 
+    (`orderno`, `orddt`, `memid`, `ordamt`, `insdtm`) VALUES
+    ('202202002', '2022-02-01', 'hong1', '1000', '2022-03-01 14:54:40');
+
+INSERT INTO `kamebook`.`order_h` 
+    (`orderno`, `orddt`, `memid`, `ordamt`, `insdtm`) VALUES
+    ('202202003', '2022-02-02', 'park', '10000', '2022-03-01 14:55:28');
+
+INSERT INTO `kamebook`.`order_h` 
+    (`orderno`, `orddt`, `memid`, `ordamt`, `insdtm`) VALUES
+    ('202202004', '2022-02-02', 'abcd', '500', '2022-03-01 14:56:03');
+
+
+# P107: `order_d` 테이블에 SQL 문으로 데이터 입력하기: 모두 16행의 데이터 
+INSERT INTO `kamebook`.`order_d` 
+     (`orderno`, `goodscd`, `unitcd`, `unitprice`, `qty`, `amt`, `insdtm`) VALUES
+     ('202201001', 'GDS01', '01', '2000', '10', '20000', '2022-03-01 15:10:39');
+
+INSERT INTO `kamebook`.`order_d` 
+    (`orderno`, `goodscd`, `unitcd`, `unitprice`, `qty`, `amt`, `insdtm`) VALUES
+    ('202201001', 'GDS02', '02', '100', '50', '5000', '2022-03-01 15:11:39');
+
+INSERT INTO `kamebook`.`order_d` 
+    (`orderno`, `goodscd`, `unitcd`, `unitprice`, `qty`, `amt`, `insdtm`) VALUES
+    ('202201001', 'GDS03', '03', '5000', '1', '5000', '2022-03-01 15:12:23');
+
+INSERT INTO `kamebook`.`order_d` 
+    (`orderno`, `goodscd`, `unitcd`, `unitprice`, `qty`, `amt`, `insdtm`) VALUES
+    ('202201002', 'GDS01', '01', '1000', '5', '5000', '2022-03-01 15:13:28');
+
+INSERT INTO `kamebook`.`order_d` 
+    (`orderno`, `goodscd`, `unitcd`, `unitprice`, `qty`, `amt`, `insdtm`) VALUES
+    ('202201002', 'GDS03', '03', '5000', '10', '50000', '2022-03-01 15:14:26');
+
+INSERT INTO `kamebook`.`order_d` 
+    (`orderno`, `goodscd`, `unitcd`, `unitprice`, `qty`, `amt`, `insdtm`) VALUES
+    ('202201003', 'GDS04', '02', '500', '50', '25000', '2022-03-01 15:15:12');
+
+INSERT INTO `kamebook`.`order_d` 
+    (`orderno`, `goodscd`, `unitcd`, `unitprice`, `qty`, `amt`, `insdtm`) VALUES
+    ('202201004', 'GDS05', '02', '1000', '10', '10000', '2022-03-01 15:15:59');
+
+INSERT INTO `kamebook`.`order_d` 
+    (`orderno`, `goodscd`, `unitcd`, `unitprice`, `qty`, `amt`, `insdtm`) VALUES
+    ('202201005', 'GDS02', '02', '100', '50', '5000', '2022-03-01 15:16:45');
+
+INSERT INTO `kamebook`.`order_d` 
+    (`orderno`, `goodscd`, `unitcd`, `unitprice`, `qty`, `amt`, `insdtm`) VALUES
+    ('202201005', 'GDS03', '03', '5000', '4', '20000', '2022-03-01 15:17:30');
+
+INSERT INTO `kamebook`.`order_d` 
+    (`orderno`, `goodscd`, `unitcd`, `unitprice`, `qty`, `amt`, `insdtm`) VALUES
+    ('202201006', 'GDS01', '01', '2000', '1', '2000', '2022-03-01 15:18:08');
+
+INSERT INTO `kamebook`.`order_d` 
+    (`orderno`, `goodscd`, `unitcd`, `unitprice`, `qty`, `amt`, `insdtm`) VALUES
+    ('202202001', 'GDS01', '01', '2000', '10', '20000', '2022-03-01 15:18:59');
+
+INSERT INTO `kamebook`.`order_d` 
+    (`orderno`, `goodscd`, `unitcd`, `unitprice`, `qty`, `amt`, `insdtm`) 
+    VALUES
+    ('202202001', 'GDS03', '03', '5000', '1', '5000', '2022-03-01 15:19:10');
+
+INSERT INTO `kamebook`.`order_d` 
+    (`orderno`, `goodscd`, `unitcd`, `unitprice`, `qty`, `amt`, `insdtm`) 
+    VALUES
+    ('202202001', 'GDS05', '02', '1000', '20', '20000', '2022-03-01 15:19:20');
+
+INSERT INTO `kamebook`.`order_d` 
+    (`orderno`, `goodscd`, `unitcd`, `unitprice`, `qty`, `amt`, `insdtm`) VALUES
+    ('202202003', 'GDS01', '01', '2000', '10', '20000', '2022-03-01 15:19:30');
+
+INSERT INTO `kamebook`.`order_d` 
+    (`orderno`, `goodscd`, `unitcd`, `unitprice`, `qty`, `amt`, `insdtm`) 
+    VALUES
+    ('202202003', 'GDS07', '03', '2000', '20', '40000', '2022-03-01 15:20:30');
+
+INSERT INTO `kamebook`.`order_d` 
+    (`orderno`, `goodscd`, `unitcd`, `unitprice`, `qty`, `amt`, `insdtm`) 
+    VALUES
+    ('202202004', 'GDS01', '01', '2000', '10', '20000', '2022-03-01 15:21:18');
+
+
+# P109: 데이터 검색하기
+# P112: 데이터 검색: 검색하려는 열 이름 목록 지정
+SELECT memid, memname FROM members;
+
+# P113: 데이터 검색: 검색하려는 열 이름 목록 지정
+SELECT memname, memid FROM `members`;
+
+# P113: 모든 열 검색하기 
+SELECT * FROM members;
+
+# P114: 결과 셋의 열 이름 지정하기: AS
+SELECT memname AS '회원명', memid AS '회원ID' FROM members;
+
+SELECT memname '회원명', memid '회원ID' FROM members;
+
+# P115: 결과 셋의 데이터 정렬하기: ORDER BY
+SELECT memid, memname FROM `members` ORDER BY memname ASC;
+
+SELECT memid, memname FROM `members` ORDER BY memname DESC;
+
+# P116: 두 개의 열을 기준으로 졍렬하기: ORDER BY
+SELECT memid, memname FROM `members` 
+    ORDER BY memname ASC, memid DESC;
+
+# P118: 중복 데이터 하나만 보기: DISTINCT
+SELECT DISTINCT jobcd FROM `members` ORDER BY jobcd;
+
+# P119: 검색하는 행 수 제한하기: LIMIT ... OFFSET
+SELECT memid, memname FROM `members` 
+    ORDER BY memname LIMIT 3;
+
+# P120: 검색하는 행 수 제한하기: LIMIT ... OFFSET
+SELECT memid, memname FROM `members`
+    ORDER BY memname LIMIT 3 OFFSET 2;
+
+SELECT memid, memname FROM `members` ORDER BY memname LIMIT 2, 3;
+
+# P121: 연산 열 추가 
+SELECT memid, memname, mileage + 10 AS '연산열' FROM members; 
+
+SELECT memid, memname, CONCAT(memid,  memname) 
+    FROM `members`; 
+
+# P123: 검색 결과를 파일로 출력하기: SELECT ... INTO
+# `members` 테이블 백업
+# 주의: 파일 저장을 위한 드라이브와 폴더 경로를 확인한다. 
+#        드라이브 문자와 경로는 자신이 사용할 드라이브 문자와 경로를 사용한다. 
+SELECT * INTO OUTFILE 'D:\\Database\\Data\\members.dat'
+    FIELDS TERMINATED BY ',' ENCLOSED BY '"'
+    FROM `members`;
+
+# P124: 검색 결과를 파일로 출력하기: SELECT ... INTO
+# `goodsinfo` 테이블 백업
+SELECT * INTO OUTFILE 'D:\\Database\\Data\\goodsinfo.dat'
+    FIELDS TERMINATED BY ',' ENCLOSED BY '"'
+    FROM `goodsinfo`;
+
+# `order_h` 테이블 백업
+SELECT * INTO OUTFILE 'D:\\Database\\Data\\order_h.dat'
+    FIELDS TERMINATED BY ',' ENCLOSED BY '"'
+    FROM `order_h`;
+
+# `order_d` 테이블 백업
+SELECT * INTO OUTFILE 'D:\\Database\\Data\\order_d.dat'
+    FIELDS TERMINATED BY ',' ENCLOSED BY '"'
+    FROM `order_d`;
+
+# P125: 그래픽 모드에서 테이블 데이터 삭제하기: 결과 확인하기 
+SELECT * FROM `members`;
+
+# P126: 테이블 데이터 삭제하기: SQL 문 사용: `goodsinfo` 테이블 
+DELETE FROM goodsinfo;
+
+# P127: 외부 파일로부터 데이터 가져오기(`members` 테이블)
+LOAD DATA LOCAL INFILE 'D:\\Database\\Data\\members.dat'
+    INTO TABLE `members`
+    FIELDS TERMINATED BY ',' ENCLOSED BY '"';
+
+# 외부 파일로부터 가져온 데이터 확인하기 
+SELECT * FROM `members`;
+
+# P128: 외부 파일로부터 데이터 가져오기(`goodsinfo` 테이블)
+LOAD DATA LOCAL INFILE 'D:\\Database\\Data\\members.dat'
+    INTO TABLE `goodsinfo`
+    FIELDS TERMINATED BY ',' ENCLOSED BY '"';
+
+# P129: 조건 지정하여 데이터 검색하기: WHERE
+SELECT memid, memname, addr, birthday, jobcd, mileage
+    FROM `members`
+    WHERE `memid` = 'kim1';
+
+# P130: 조건 지정하여 데이터 검색하기 WHERE ... ORDER BY
+SELECT memid, memname, addr, birthday, jobcd, mileage
+    FROM `members`
+    WHERE `jobcd` = '1'
+    ORDER BY `memid`;
+
+SELECT memid, memname, addr, birthday, jobcd, mileage
+    FROM `members`
+    WHERE `mileage` = 500;
+
+# P131: WHERE 절에서 날짜 데이터 사용하기 
+SELECT memid, memname, addr, birthday, jobcd, mileage
+    FROM `members`
+    WHERE `birthday` = '2003/07/01';
+
+# P132: 조건 지정하여 데이터 검색하기 WHERE ... BETWEEN
+SELECT memid, memname, mileage
+    FROM `members`
+    WHERE `mileage` BETWEEN 100 AND 1000
+    ORDER BY `memid`;
+
+# P133: 조건 지정하여 데이터 검색하기 WHERE ... LIKE
+SELECT memid, memname, mileage
+    FROM `members`
+    WHERE `memname` LIKE '홍%'
+    ORDER BY `memid`;
+
+SELECT memid, memname, addr
+    FROM `members`
+    WHERE `addr` LIKE '%동구%'
+    ORDER BY `memid`;
+
+# P134: 조건 지정하여 데이터 검색하기 WHERE ... LIKE
+SELECT memid, memname
+    FROM `members`
+    WHERE `memname` LIKE '%수';
+
+# P135: 조건 지정하여 데이터 검색하기 IN
+SELECT memid, memname, jobcd
+    FROM `members`
+    WHERE `jobcd` IN ('1', '3')
+    ORDER BY `memid`;
+
+SELECT memid, memname, jobcd
+    FROM `members`
+    WHERE `jobcd` =  '1' OR `jobcd` = '3';
+
+# P135: 조건 지정하여 데이터 검색하기 NOT
+SELECT memid, memname, jobcd
+    FROM `members`
+    WHERE NOT `jobcd` = '1'
+    ORDER BY `memid`;
+
+# P136
+SELECT memid, memname, jobcd
+    FROM `members`
+    WHERE `jobcd` != '1'
+    ORDER BY `memid`;
+
+# P136: 조건 지정하여 데이터 검색하기 IS NULL
+SELECT memid, memname, jumin
+    FROM `members`
+    WHERE `jumin` IS NULL
+    ORDER BY `memid`;
+
+# P144: INSERT 쿼리문 사용하기 
+INSERT INTO `members` 
+    (memid, memname)
+    VALUES ('abcd', '추가자');
+
+# P145: 추가된 데이터 확인
+SELECT * FROM `members` ORDER BY `memid`;
+
+# P146: 하나의 INSERT 쿼리문으로 두 개 레코드 추가와 확인
+INSERT INTO `members` 
+    (memid, memname) 
+    VALUES ('abcd1', '추가자1'),
+           ('abcd2', '추가자2');
+
+SELECT * FROM `members` ORDER BY `memid`;
+
+# P146: 기본키 중복 오류
+INSERT INTO `members` 
+    (memid, memname)
+    VALUES ('abcd', '추가자');
+
+# P147: 열의 이름을 잘못 지정한 오류
+INSERT INTO `members` (memdi, memname) 
+    VALUES ('abcde', '홍길동');
+
+# P148: 열에 데이터가 입력되지 않은 오류
+INSERT INTO `members` (memid) 
+    VALUES ('abcde');
+
+# P149: 날짜 데이터 유형의 값이 잘못된 오류
+INSERT INTO `members` 
+    (memid, memname, birthday)
+    VALUES ('abcde', '홍길동', '1990-02-30');
+
+# P150: 표현 범위를 벗어나는 숫자 데이터 오류
+INSERT INTO `members` 
+    (memid, memname, mileage)
+    VALUES ('abcde', '홍길동', 12345678);
+
+# P150: 열거형 데이터에서 없는 데이터 사용 오류
+INSERT INTO `members` 
+    (memid, memname, stat)
+    VALUES ('abcde', '홍길동', 'X');
+
+# P151: 열의 개수와 값의 개수가 일치하지 않는 오류
+INSERT INTO `members` 
+    (memid, memname, stat)
+    VALUES ('abcde', '홍길동');
+
+# P152: 문법 오류
+INSERT INTO `members` 
+    (memid  memname)
+    VALUES ('abcde', '홍길동');
+
+# P153: AUTO_INCREMENT 속성을 갖는 열에 데이터 입력하기
+
+# `board` 테이블 생성
+CREATE TABLE `board` (
+    idx INT(11) NOT NULL AUTO_INCREMENT,
+    title VARCHAR(50) NULL DEFAULT NULL 
+                COLLATE 'utf8mb4_general_ci',
+    content TEXT NULL DEFAULT NULL 
+                COLLATE 'utf8mb4_general_ci',
+    PRIMARY KEY (idx) USING BTREE
+)
+COLLATE='utf8mb4_general_ci'
+ENGINE=InnoDB;
+
+# P154: `board` 테이블에 데이터 추가하고 확인하기
+INSERT INTO `board` (title, content)
+    VALUES (
+       'Auto Increment Test', 
+       'Auto Increment 속성이 지정된 열은 데이터베이스에서 자동으로 값을 채운다.');
+
+SELECT * FROM  `board`;
+
+INSERT INTO `board` (title, content) 
+       VALUES ('2번째 제목', '2번째 내용');
+
+    SELECT * FROM `board`;
+
+# P155: `board` 테이블에 데이터 추가하고 확인하기
+SET insert_id = 10;
+INSERT INTO `board` (title, content) 
+       VALUES ('3번째 제목', '3번째 내용');
+
+SELECT * FROM `board`;
+
+# P156: UPDATE
+# P158: UPDATE 이전의 현재 데이터 확인
+SELECT * FROM `order_h`; 
+
+# P158 모든 행의 지정된 열 업데이트할 때 경고 메시지
+UPDATE `order_h` SET `ordamt` = 0;
+
+
+# P159: UPDATE 결과 확인
+SELECT * FROM `order_h`;
+
+# P160: WHERE 조건을 사용한 UPDATE와 결과 확인
+UPDATE `order_h` 
+    SET `ordamt` = 1000
+    WHERE `orderno` = '202201001';
+
+SELECT * FROM `order_h`;
+
+# P160: 열의 값을 NULL로 UPDATE하고 결과 확인
+UPDATE `order_h` SET `canceldtm` = NULL
+    WHERE `orderno` = '202201005';
+
+SELECT * FROM `order_h`;
+
+# P161: WHERE 조건을 사용한 두 개 열을 함께 UPDATE하고 결과 확인
+UPDATE `order_h`  
+    SET `cancelyn` = 'Y', canceldtm = CURRENT_TIMESTAMP()
+    WHERE `orderno` = '202201005';
+
+SELECT * FROM `order_h`;
+
+# P162: 테이블의 모든 레코드 삭제할 때 경고 메시지
+DELETE FROM `order_h` ;
+
+# P163: 모든 레코드를 삭제한 결과 확인
+SELECT * FROM `order_h`;
+
+# P163: `order_h` 테이블 데이터 복원
+LOAD DATA LOCAL INFILE 'D:\\Database\\Data\\order_h.dat' 
+    INTO TABLE `order_h`
+    FIELDS TERMINATED BY ',' ENCLOSED BY '"' ;
+
+# P164: INSERT 쿼리문 실습으로 추가한 데이터 삭제하기 
+DELETE FROM `members` WHERE `memid` = 'abcd';
+DELETE FROM `members` WHERE `memid` = 'abcd1';
+DELETE FROM `members` WHERE `memid` = 'abcd2';
+
+SELECT * FROM `members`;
+
+# P165: TRUNCATE TABLE 쿼리문 사용과 결과 확인
+TRUNCATE TABLE `order_h` ;
+
+SELECT * FROM `order_h` ;
+
+# P165: 삭제한 `order_h` 테이블의 데이터 복원하기 
+LOAD DATA LOCAL INFILE 'D:\\Database\\Data\\order_h.dat' 
+    INTO TABLE `order_h`
+    FIELDS TERMINATED BY ',' ENCLOSED BY '"' ;
+
+

@@ -1,0 +1,467 @@
+#MariaDB로 따라하며 배우는 SQL 프로그래밍 
+
+# CHAPTER 6: 내장 함수
+
+# P169: LEEFT() 함수
+SELECT  LEFT('MariaDB', 5);
+SELECT  LEFT('MariaDB', 0);
+SELECT  LEFT('MariaDB', 10);
+
+# P170: LEFT() 함수
+SELECT  LEFT('MariaDB', -2);
+SELECT  LEFT("데이터베이스", 3);
+SELECT  LEFT("데이터베이스", 2.7);
+
+SELECT LEFT(`orderno`, 6) FROM `order_h`;
+
+# P171: LEFT() 함수
+SELECT orderno, memid, ordamt 
+    FROM `order_h`
+    WHERE LEFT(`orderno`, 6) = '202201';
+
+# P171: RIGHT() 함수
+# RIGHT() 함수 사용 예는 없음
+
+# P172: SUBSTRING() • SUBSTR() • MID() 함수
+SELECT  SUBSTRING('DATABASE IS IMPORTANT!' FROM 13 FOR 9);
+SELECT  SUBSTRING('DATABASE IS IMPORTANT!', 13, 9);
+SELECT  SUBSTRING('DATABASE IS IMPORTANT!', 13);
+SELECT  SUBSTRING('DATABASE IS IMPORTANT!', -10, 9); 
+SELECT  SUBSTRING('DATABASE IS IMPORTANT!', -10);
+SELECT  SUBSTRING('대한민국', 3);
+
+SELECT SUBSTRING(`orderno`, 5, 2) FROM `order_h`;
+
+# P173: SUBSTRING_INDEX() 함수
+SELECT  SUBSTRING_INDEX("www.mariadb.org", '.', 2);
+SELECT  SUBSTRING_INDEX("www.mariadb.org", '.', -2);
+SELECT  SUBSTRING_INDEX("testdata.xls", '.', 1); 
+SELECT  SUBSTRING_INDEX("testdata.xlsx", '.', 1); 
+
+# P174: ELT() 함수
+SELECT  ELT(2, '월', '화', '수', '목', '금', '토');
+SELECT  ELT(7, '월', '화', '수', '목', '금', '토');
+
+# P175:  FIELD() 함수
+SELECT  FIELD('수', '월', '화', '수', '목', '금', '토');
+SELECT  FIELD('일', '월', '화', '수', '목', '금', '토'); 
+
+# P175:  FIND_IN_SET() 함수
+SELECT  FIND_IN_SET('목', '월,화,수,목,금,토');
+SELECT  FIND_IN_SET('일', '월,화,수,목,금,토');
+SELECT  FIND_IN_SET(' 목', '월, 화, 수, 목, 금, 토');
+SELECT  FIND_IN_SET('일', '월, 화, 수, 목, 금, 토, 일')
+
+# P176: LOWER() • LCASE() 함수
+SELECT  LOWER('MariaDB');
+SELECT  LCASE('MariaDB');
+
+# P176: UPPER() • UCASE() 함수
+SELECT  UPPER('MariaDB');
+SELECT  UCASE('MariaDB');
+
+# P177: LTRIM() • RTRIM() • TRIM() 함수
+SELECT  LTRIM('    Maria DB    ');
+SELECT  RTRIM('    Maria DB    ');
+SELECT  TRIM('    Maria DB    ');
+
+# P178: CHAR_LENGTH() • CHARACTER_LENGTH() 함수
+SELECT  CHAR_LENGTH('MariaDB');
+SELECT  CHARACTER_LENGTH('MariaDB');
+SELECT  CHAR_LENGTH("데이터베이스SQL😊😊");
+SELECT  CHAR_LENGTH('  MariaDB  ');
+SELECT  CHAR_LENGTH(TRIM('  MariaDB  '));
+
+# P179: LENGTH() • LENGTHB() 함수
+# MySQL에는 LENGTHB() 함수가 없다. 
+SELECT  LENGTH('MariaDB');    
+SELECT  LENGTHB('MariaDB'); 
+SELECT  LENGTH("데이터베이스SQL😊😊");
+
+# P179: CONCAT() • CONCAT_WS() 함수
+SELECT  CONCAT('Maria', 'DB');   
+SELECT  CONCAT('Maria', '/', 'DB');
+SELECT  CONCAT_WS("/", "Maria", "DB");
+
+# P180
+SELECT CONCAT_WS('/', orderno, memid) FROM `order_h`;
+
+# P181: CAST() • CONVERT() 함수
+# MySQL에서는 VARCHAR 유형으로 CASET() 또는 CONVERT() 함수를 사용할 수 없다.
+# CHAR 유형을 사용해야 한다. 
+SELECT  CAST(123 AS VARCHAR(5));
+SELECT  CONVERT(123, VARCHAR(5));
+
+SELECT  CAST(orddt  AS CHAR(7))
+    FROM `order_h`
+    WHERE `orderno` = '202201001';
+
+SELECT CONVERT(orddt, CHAR(7))
+    FROM `order_h`
+    WHERE `orderno` = '202201001';
+
+# P182: LPAD() • RPAD() 함수
+SELECT  LPAD('MariaDB', 10, '@');
+SELECT  LPAD('MariaDB', 10, '!@');
+SELECT  LPAD('MariaDB', 10);
+SELECT  LPAD('MariaDB', 2);
+SELECT  RPAD('MariaDB', 10, '@');
+SELECT  RPAD('MariaDB', 10, '!@');
+SELECT  RPAD('MariaDB', 10); 
+SELECT  RPAD('MariaDB', 2); 
+
+# P183: INSERT() 함수
+SELECT  INSERT('MariaSQL은 OpenDB이다.', 6, 4, 'DB는'); 
+
+# P184: REPLACE() 함수
+SELECT  REPLACE('이것은 MariaDB', '이것은', 'This is'); 
+SELECT  REPLACE('This is Maria-db',  '-DB', 'DB');
+
+# P184: REPEAT() 함수
+SELECT  REPEAT('@#', 5);
+
+# P185: REVERSE() 함수
+SELECT  REVERSE('ABCDE');
+
+# P185: SPACE() 함수
+SELECT  CONCAT('대한', SPACE(3), '민국');
+
+# P186: FORMAT() 함수
+SELECT  FORMAT(12345.6789, 2);
+SELECT  FORMAT(12345.6789, 2, 'es_ES');
+
+# P186: ASCII() 함수
+SELECT  ASCII('A');
+SELECT  ASCII('AB'); 
+
+# P187: CHR() • CHAR() 함수
+SELECT  CHR(65);
+SELECT  CHAR(65, 66, 67);
+SELECT  LENGTH(CHAR(65, 66, 67 USING utf16));
+
+# P188: HEX() • UNHEX() 함수
+SELECT  HEX('ABCD'); 
+SELECT  UNHEX('41424344');
+
+# P189: TO_CHAR() 함수
+SELECT  TO_CHAR('2022-03-01 14:50:39', 'YYYY/MM/DD');
+
+SET lc_time_names = 'en-US';
+SELECT  TO_CHAR('2022-03-01 14:50:39', 'RRRR MON DY');
+
+SET lc_time_names = 'ko_KR';
+SELECT  TO_CHAR('2022-03-01 14:50:39', 'RRRR MON DY');
+
+SELECT  TO_CHAR('2022-03-01 13:50:39', 'HH MI SS');
+
+SELECT  TO_CHAR('2022-03-01 13:50:39', 'HH12 MI SS');
+
+SELECT  TO_CHAR('2022-03-01 13:50:39', 'HH24 MI SS');
+
+# P191: ADDDATE() • DATE_ADD() 함수
+SELECT  ADDDATE('2022-01-01', 31);
+SELECT  ADDDATE('2022-01-01', -1);
+SELECT  ADDDATE('2022-01-01', INTERVAL 31 DAY);
+SELECT ADDDATE('2022-01-01', INTERVAL 2 MONTH);
+SELECT ADDDATE('2022-01-01', INTERVAL 5 WEEK);
+SELECT ADDDATE('2022-01-01', INTERVAL '1 2' YEAR_MONTH);
+SELECT ADDDATE('2022-01-01', INTERVAL '-1 2' YEAR_MONTH);
+SELECT ADDDATE('2022-01-01', INTERVAL '1 -2' YEAR_MONTH);
+SELECT  ADDDATE('2022-01-01 13:50:39', INTERVAL 10 HOUR);
+
+# P192: CURDATE() • CURRENT_DATE() 함수
+SELECT  CURDATE();
+SELECT  CURRENT_DATE(); 
+SELECT  CURRENT_DATE; 
+SELECT  CURRENT_DATE() + 0;
+
+# P193: CURTIME() • CURRENT_TIME() 함수
+SELECT  CURTIME();
+SELECT  CURRENT_TIME();
+SELECT  CURRENT_TIME; 
+SELECT  CURRENT_TIME() + 0;  
+SELECT  CURRENT_TIME(2);
+
+# P194: NOW() • CURRENT_TIMESTAMP() • SYSDATE() •
+                       LOCALTIME() • LOCALTIMESTAMP() 함수
+SELECT  NOW();
+SELECT  NOW(2);
+SELECT  CURRENT_TIMESTAMP();
+SELECT  CURRENT_TIMESTAMP;
+SELECT  CURRENT_TIMESTAMP(3);
+SELECT  SYSDATE();
+SELECT  SYSDATE(4);
+SELECT  LOCALTIME(); 
+SELECT  LOCALTIME(5); 
+SELECT  LOCALTIME;
+SELECT  LOCALTIMESTAMP();
+SELECT  LOCALTIMESTAMP(6);
+SELECT  LOCALTIMESTAMP;
+
+
+# P195: YEAR() • MONTH() • DAY() • HOUR()•
+             MINUTE() • SECOND() • MICROSECOND() 함수
+SELECT  YEAR('2022-03-01');
+SELECT  MONTH('2022-03-01'); 
+SELECT  DAY('2022-03-01');
+
+SET  @nowtime = NOW(6)
+SELECT  HOUR(@nowtime);
+SELECT  MINUTE(@nowtime); 
+SELECT  SECOND(@nowtime);
+SELECT  MICROSECOND(@nowtime);
+
+# P196: DAYOFYEAR() • DAYOFMONTH() • DAYOFWEEK() •
+                        MONTHNAME() 함수
+SELECT  DAYOFYEAR('2022-03-01');
+SELECT  DAYOFMONTH('2022-03-01');
+SELECT  DAYOFWEEK('2022-03-01');
+
+SET lc_time_names  = 'en_US';
+SELECT  MONTHNAME('2022-03-01');  
+
+SET lc_time_names  = 'ko_KR';
+SELECT  MONTHNAME('2022-03-01'); 
+
+# P197: DATE() • TIME() 함수
+SELECT  DATE(NOW());
+SELECT  TIME(NOW());
+SELECT  TIME('2022-03-01'); 
+
+# P198: DATEDIFF() • TIMEDIFF() 함수
+SELECT  DATEDIFF('2022-03-01', '2021-03-01');
+SELECT  DATEDIFF('2021-03-01', '2022-03-01'); 
+SELECT  DATEDIFF('2022-03-01', '2022-03-01');
+SELECT  TIMEDIFF('23:10:20', '20:00:00');
+SELECT  TIMEDIFF('20:00:00', '23:10:20');
+SELECT  TIMEDIFF(NOW(), '2022-02-28');
+
+# P199: LAST_DAY() 함수
+SELECT  LAST_DAY('2022-02-02');
+SELECT  LAST_DAY('2024-02-02');
+
+# P199: MAKEDATE() 함수
+SELECT  MAKEDATE(2022, 60);
+SELECT  MAKEDATE('2022-03-01', 60);  
+
+# P200: MAKETIME() 함수
+SELECT  MAKETIME(13, 20, 30);  
+SELECT  MAKETIME(25, 20, 30); 
+SELECT  MAKETIME(25, 61, 30); 
+
+# P201: QUARTER() 함수
+SELECT  QUARTER('2022-04-01');
+
+# P203: DATE_FORMAT() 함수
+SELECT  DATE_FORMAT('2022-03-01', '%y/%c/%e');
+SELECT  DATE_FORMAT('2022-03-01', '%m/%d/%Y'); 
+SELECT  DATE_FORMAT('2022-03-01', '%b %d, %Y', 'ko_KR'); 
+SELECT  DATE_FORMAT('2022-03-01', '%b %d, %Y', 'en_US'); 
+
+# P203: ABS() 함수
+SELECT  ABS(-10);
+
+# P204: SIGN() 함수
+SELECT  SIGN(10);
+SELECT  SIGN(0);
+SELECT  SIGN(-10);   
+
+# P205: CEILING() • CEIL() • FLOOR() • TRUNCATE() 함수
+SELECT  CEILING(2.34); 
+SELECT  CEILING(-2.34); 
+SELECT  FLOOR(2.34);
+SELECT  FLOOR(-2.34); 
+SELECT  TRUNCATE(1.234, 1);
+SELECT  TRUNCATE(1.567, 1);
+SELECT  TRUNCATE(-2.99, 1);
+SELECT  TRUNCATE(123, -2);
+SELECT  TRUNCATE(123.456, -2);  
+
+# P206: MODE() 함수
+SELECT  MOD(32, 5);
+SELECT  32 MOD 5; 
+SELECT  MOD(32, 0);
+SELECT  MOD(3.5, 1.2);
+SELECT  MOD(3.5, -1.2);
+SELECT  MOD(-3.5, 1.2);
+SELECT MOD(-3.5, -1.2);
+
+# P206: ROUND() 함수
+SELECT  ROUND(1.234);
+SELECT  ROUND(1.567);
+SELECT  ROUND(1.567, 0);
+SELECT  ROUND(1.567, 2); 
+SELECT  ROUND(123.456, -2); 
+
+# P207: POW() • POWER()  함수
+SELECT  POW(2, 3); 
+SELECT  POW(2.1, 3);
+
+# P208: SQRT() • PI() 함수
+SELECT  SQRT(9);
+SELECT  SQRT(-9);
+SELECT  PI(); 
+SELECT  PI() + 0.0000000000;
+
+# P209: GREATEST() • LEAST() 함수
+SELECT  GREATEST(30, 10,  5, 40); 
+SELECT  GREATEST('D', 'A', 'C', 'B');
+SELECT  GREATEST('ABC', 'acc', 'aBd');
+SELECT  GREATEST('ABC', 30, 'acc', 40);
+SELECT  LEAST(30, 10,  5, 40);
+SELECT  LEAST('D', 'A', 'C', 'B'); 
+
+# P209: DEGREES() • RADIANS() 함수
+SELECT  DEGREES(PI());
+SELECT  RADIANS(180);
+
+# P210: RAND() 함수
+CREATE TABLE t (i INT) ;
+INSERT INTO t VALUES (1), (2), (3) ;
+SELECT i, RAND() FROM t ;
+
+# P211
+SELECT i, RAND(3) FROM t;
+
+SELECT i, RAND() FROM t;
+
+# P212
+SELECT i, RAND(3) FROM t;
+
+# P213: CASE 연산자 
+SELECT 
+        memid, 
+        memname, 
+        CASE `jobcd`
+             WHEN '1' THEN '학생'
+             WHEN '2' THEN '회사원'
+             WHEN '3' THEN '공무원'
+             WHEN '4' THEN '교사'
+             ELSE '기타'
+        END
+        AS job
+    FROM `members`;
+
+# P215: `order_h` 테이블의 데이터 확인 
+SELECT orderno, orddt, ordamt, cancelyn FROM `order_h`;
+
+# P215: '정상 주문'과 '취소 주문' 구분
+SELECT orderno,
+       CONVERT(orddt, CHAR(10)) AS Order_Date, 
+       CASE WHEN cancelyn = 'N' THEN ordamt ELSE 0 END AS 'Normal', 
+       CASE WHEN cancelyn = 'Y' THEN ordamt ELSE 0 END AS 'Cancel'
+    FROM `order_h` ORDER BY `orderno`;
+
+# P216: DECODE_ORACLE() 함수
+SELECT memid, memname, jobcd,
+       DECODE_ORACLE(jobcd, 
+                         '1', '학생', 
+                         '2', '회사원', 
+                         '3', '공무원', 
+                         '4', '교사',  
+                         '기타' ) jobname  
+    FROM `members` ORDER BY `memid`;
+
+# P217: IF() 함수 
+SELECT  IF( 1 < 2, 'Yes', 'No'); 
+SELECT  IF( 1 = 2, 'Yes', 'No'); 
+
+SELECT orderno, 
+       IF(cancelyn = 'N', '정상 주문', '취소 주문') 
+    FROM `order_h` ORDER BY `orderno`;
+
+# P218: IFNULL() • NVL() 함수
+# MySQL에서는 NVL() 함수를 지원하지 않는다. 
+SELECT  IFNULL( 1, 0); 
+SELECT  IFNULL(NULL, 10);
+SELECT  IFNULL(1/0, '분모가 0이다.'); 
+SELECT  NVL(NULL, 10); 
+
+# P219 
+SELECT  memid, memname, 
+        IFNULL(leavedtm, '현재 활동 중인 사용자')
+    FROM `members` ORDER BY `memid`;
+
+# P220: NULLIF( ) • NVL2( ) 함수
+# MySQL에서는 NVL2() 함수를 지원하지 않는다.
+SELECT  NULLIF(1, 1);  
+SELECT  NULLIF(1, 2);  
+SELECT  NVL2(NULL, 1, 2);
+SELECT  NVL2('x', 1, 2); 
+
+# P220: ROWNUM() 함수 
+SELECT ROWNUM(), memid, memname 
+    FROM members ORDER BY memid; 
+
+# P221
+SELECT ROWNUM(), 
+       memid, 
+       memname 
+    FROM members ORDER BY memid DESC;
+
+
+# P222: ROW_COUNT() 함수
+INSERT INTO members (memid, memname) 
+       VALUES('test1', '테스트1');
+
+SELECT ROW_COUNT();
+
+# P223
+UPDATE members  
+    SET memname = 'up test'
+    WHERE  memid = 'test1';
+SELECT  ROW_COUNT();
+
+DELETE FROM members WHERE memid = 'test1';
+
+SELECT ROW_COUNT();
+
+# P224: DEFAULT() 함수
+SELECT DEFAULT(stat), 
+       DEFAULT(mileage), 
+       DEFAULT(enterdtm) 
+    FROM `members`
+    WHERE memid = 'kim1' ;
+
+SELECT  DEFAULT(memid) 
+    FROM members
+    WHERE memid = 'kim1';
+
+# P225: LAST_INSERT_ID() 함수
+# `board` 테이블의 현재 데이터 확인
+SELECT * FROM board;
+
+# P226
+INSERT INTO  board (title, content) 
+       VALUES('LAST_INSERT_ID()', 'LAST_INSERT_ID() 테스트');
+
+SELECT LAST_INSERT_ID();
+
+DELETE FROM board WHERE idx = LAST_INSERT_ID(); 
+
+# P227: USER() • CURRENT_USER() 함수
+SELECT USER(), CURRENT_USER();
+
+# P227: DATABASE() • VERSION() 함수
+SELECT DATABASE(), VERSION();
+
+# P228: JSON_OBJECT() 함수
+SELECT JSON_OBJECT("member_id", memid, 
+                   "member_name", memname) AS js
+    FROM `members`
+    ORDER BY memid;
+
+# P229: 묵시적 데이터 유형 변환
+SELECT  '100' + '200';
+SELECT 100 + '200';
+SELECT  100 + '200GIGA';
+SELECT  100 + 'GIGA200', 100 + 'GI200GA';
+SELECT  0 = '0GIGA'; 
+SELECT  ‘0’ = 'GIGA200';
+SELECT '5' = 5; 
+SELECT TIME'10:20:30' + 1;    
+SELECT  TIME'10:20:30' + INTERVAL 1 SECOND; 
+SELECT  2.2 / 3;  
+SELECT  "2.2" / 3; 
+
+
