@@ -1,0 +1,152 @@
+#MariaDB로 따라하며 배우는 SQL 프로그래밍 
+
+# CHAPTER 8: 고급 SQL
+
+# P347: 데이터베이스 사용
+USE `kamebook`;
+
+# P347: 테이블 구조를 복사하여 새로운 테이블 생성
+CREATE TABLE IF NOT EXISTS `members_alter_test` 
+    LIKE `members` ;
+
+# P348: 테이블 이름 변경
+ALTER TABLE `members_alter_test` RENAME `members_temp`;
+
+# P348: 테이블 내의 열 이름 변경
+ALTER TABLE `members_temp`
+    CHANGE COLUMN jumin juminno VARCHAR(64);
+
+# P349: 테이블 내의 열 속성 변경
+ALTER TABLE `members_temp`
+    MODIFY COLUMN juminno  
+        VARCHAR(64) DEFAULT NULL COMMENT '주민등록번호';
+
+# P349: 테이블 내의 열 삭제 
+ALTER TABLE `members_temp`
+    DROP COLUMN IF EXISTS `juminno`;
+
+# P350: 테이블에 열 추가 1
+ALTER TABLE `members_temp`
+    ADD COLUMN IF NOT EXISTS juminno 
+        VARCHAR(64) NULL DEFAULT NULL COMMENT '주민번호'
+        AFTER passwdmdt ;
+
+# P350: 테이블에 열 추가 2: 추가 위치 지정
+ALTER TABLE `members_temp`
+    ADD COLUMN IF NOT EXISTS tempcol
+        VARCHAR(64) NULL DEFAULT NULL COMMENT '임시 열'
+        FIRST;
+
+
+# P350: 테이블의 기본키 삭제
+ALTER TABLE `members_temp`
+    DROP PRIMARY KEY;
+
+# P350: 테이블의 기본키 설정
+ALTER TABLE `members_temp` 
+    ADD CONSTRAINT PRIMARY KEY (`memid`);
+
+# P351: CHECK 제약사항 설정 
+ALTER TABLE `members_temp`
+    ADD CONSTRAINT ck_mileage CHECK (mileage >= 10) ;
+
+# P352: CHECK 제약사항 삭제
+ALTER TABLE `members_temp`
+    DROP CONSTRAINT ck_mileage;
+
+# P352: `goodsinfo` 테이블과 `order_d` 테이블 정보 확인
+SELECT goodscd, goodsname, unitcd, unitprice 
+    FROM goodsinfo;
+
+SELECT orderno, goodscd, unitcd, qty 
+    FROM order_d 
+    WHERE goodscd = 'GDS05';
+
+# P353: 외래키 설정
+ALTER TABLE order_d
+    ADD CONSTRAINT FK_order_d_goodsinfo 
+        FOREIGN KEY (goodscd) REFERENCES goodsinfo(goodscd);
+
+# P354: 외래키가 설정된 테이블에 데이터 추가 
+INSERT INTO order_d (orderno, goodscd, qty, amt) 
+    VALUES ('202202003', 'GDS07', 20, 20000);
+
+# P355: 외래키가 설정된 테이블에서 데이터 삭제
+DELETE FROM goodsinfo  
+    WHERE goodscd = 'GDS05';
+
+# P356: 외래키가 설정된 `order_d` 테이블에서 참조하는 `goodsinfo` 테이블에 데이터 추가 
+INSERT INTO goodsinfo (goodscd, goodsname, unitcd, unitprice) 
+    VALUES ('GDS07', '색연필', '01', 1000);
+
+# P356: 외래키가 설정된 `order_d` 테이블에 데이터 추가
+INSERT INTO order_d (orderno, goodscd, qty, amt) 
+    VALUES ('202202003', 'GDS07', 20, 20000);
+
+# P357: 외래키 삭제
+ALTER TABLE order_d  
+    DROP FOREIGN KEY IF EXISTS FK_order_d_goodsinfo;
+
+# P357: 외래키 설정
+ALTER TABLE order_d 
+    ADD CONSTRAINT  FK_order_d_goodsinfo 
+        FOREIGN KEY (goodscd) REFERENCES goodsinfo(goodscd)
+            ON DELETE CASCADE ;
+
+# P357: 외래키로 참조하는 테이블의 데이터 삭제
+DELETE FROM goodsinfo WHERE goodscd = 'GDS07';
+
+# P358: 외래키 삭제
+ALTER TABLE order_d 
+    DROP FOREIGN KEY IF EXISTS FK_order_d_goodsinfo;
+
+# P358: 외래키 설정 - 오류 발생
+ALTER TABLE  order_d 
+    ADD CONSTRAINT FK_order_d_goodsinfo 
+        FOREIGN KEY (goodscd) REFERENCES  goodsinfo(goodscd)
+            ON DELETE SET NULL;
+
+# P359: 외래키 설정
+ALTER TABLE order_d 
+    ADD CONSTRAINT FK_order_d_goodsinfo 
+        FOREIGN KEY (goodscd) REFERENCES goodsinfo(goodscd);
+
+# P359: 외래키 추가 설정
+ALTER TABLE order_d 
+    ADD CONSTRAINT FK_order_d_unitinfo
+        FOREIGN KEY (unitcd) REFERENCES unitinfo(unitcd)
+            ON DELETE SET NULL;
+
+# P359: unitinfo 테이블의 데이터 확인
+SELECT * FROM unitinfo;
+
+# P360: `order_d` 테이블에 데이터 추가하고 결과 확인
+INSERT INTO order_d (orderno, goodscd, unitcd, unitprice, qty, amt) 
+    VALUES ('202202003', 'GDS06', '99', 1500, 20, 30000);
+
+SELECT orderno, goodscd, unitcd, qty, amt 
+    FROM  order_d 
+    WHERE orderno = '202202003';
+
+# P360: `unitinfo` 테이블에서 데이터 삭제하고 결과 확인
+DELETE FROM unitinfo WHERE unitcd = '99';
+
+SELECT orderno, goodscd, unitcd, qty, amt 
+    FROM order_d 
+    WHERE orderno = '202202003';
+
+# P361: 외래키 삭제
+-- 설정된 외래키 제약사항 삭제
+ALTER TABLE order_d 
+    DROP FOREIGN KEY IF EXISTS FK_order_d_unitinfo;
+
+# P361: 외래키 설정
+-- ON UPDATE SET NULL 절을 추가하는 외래키 제약사항 설정
+ALTER TABLE order_d 
+    ADD CONSTRAINT FK_order_d_unitinfo 
+        FOREIGN KEY (unitcd) REFERENCES unitinfo(unitcd)
+            ON UPDATE SET NULL 
+            ON DELETE SET NULL;
+
+# P361: 외래키 정보 확인
+SHOW INDEX FROM order_d;

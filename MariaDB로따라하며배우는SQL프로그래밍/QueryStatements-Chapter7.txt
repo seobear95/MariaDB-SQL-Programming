@@ -1,0 +1,1048 @@
+#MariaDB로 따라하며 배우는 SQL 프로그래밍 
+
+# CHAPTER 7: 고급 SQL
+
+# P233: CROSS JOIN
+SELECT ROWNUM() AS 'NO',
+       order_h.orderno, order_h.orddt, order_h.memid, order_h.ordamt,
+       members.memid, members.memname, members.addr 
+    FROM `order_h`, `members` ; 
+
+# P235: CROSS JOIN(생략부분 포함)
+SELECT ROWNUM() AS 'NO',
+       order_h.orderno, order_h.orddt, order_h.memid, order_h.ordamt,
+       members.memid, members.memname, members.addr 
+    FROM `order_h` CROSS JOIN `members`;
+
+# P236: INNER JOIN
+SELECT ROWNUM() AS NO, 
+       order_h.orderno, order_h.orddt, order_h.memid, order_h.ordamt, 
+       members.memid, members.memname, members.addr 
+    FROM `order_h`, `members`
+    WHERE `order_h`.`memid` = `members`.`memid`;
+
+# P237: INNER JOIN(생략부분 포함)
+SELECT ROWNUM() AS NO, 
+       order_h.orderno, order_h.orddt, order_h.memid, order_h.ordamt, 
+       members.memid, members.memname, members.addr 
+    FROM `order_h` INNER JOIN `members`
+         ON `order_h`.`memid` = `members`.`memid`;
+
+# P238: JOIN할 때 열 이름 구분
+SELECT a.orderno, 
+       a.memid, 
+       b.memname
+    FROM `order_h` AS a, `members` AS b
+    WHERE a.`memid` = b.`memid`;
+
+# P239: 열의 소속 테이블을 구분 가능할 때 열 이름에서 테이블 이름 생략
+SELECT orderno, 
+       a.memid, 
+       memname
+    FROM `order_h` AS a, `members` AS b
+    WHERE a.`memid` =  b.`memid`;
+
+# P239: 열 이름을 구분할 수 없는 경우
+SELECT orderno, memid, memname
+    FROM `order_h` a, `members` b
+    WHERE a.`memid` = b.`memid` ;
+
+
+# P240: JOIN할 때 ON 조건절 사용하기
+SELECT a.orderno, a.memid, b.memname
+    FROM `order_h` AS a JOIN `members` AS b
+         ON a.`memid` =  b.`memid`;
+
+# P241: LEFT OUTER JOIN
+SELECT a.orderno, 
+       a.memid, 
+       b.memname
+    FROM `order_h` a LEFT OUTER JOIN `members` b
+         ON a.`memid` =  b.`memid`
+    ORDER BY a.orderno;
+
+# P242: RIGHT OUTER JOIN
+SELECT a.orderno, 
+       a.memid, 
+       b.memname
+    FROM `order_h` a RIGHT OUTER JOIN `members` b
+         ON a.`memid` =  b.`memid`
+    ORDER BY a.orderno;
+
+# P244: JOIN 예1
+SELECT a.orderno, a.memid, b.memname, a.ordamt, b.jobcd
+    FROM order_h a LEFT OUTER JOIN members b 
+         ON a.memid = b.memid
+    WHERE a.ordamt > 3000 AND (b.jobcd = '1' OR b.jobcd = '2')
+    ORDER BY a.orderno ;
+
+# P245: JOIN 예1 - 조건식에서 괄호 제거할 때 
+SELECT a.orderno, a.memid, b.memname, a.ordamt, b.jobcd
+    FROM order_h a LEFT OUTER JOIN members b 
+         ON a.memid = b.memid
+    WHERE a.ordamt > 3000 AND b.jobcd = '1' OR b.jobcd = '2'
+    ORDER BY  a.orderno;
+
+# P247: JOIN 예2
+SELECT a.orderno,    -- 주문번호
+       a.orddt,      -- 주문일자
+       a.memid,      -- 주문자 ID
+       b.goodscd,    -- 상품코드
+       b.qty,        -- 주문수량
+       b.amt         -- 주문금액
+    FROM `order_h` a INNER JOIN `order_d` b  -- 두 개의 테이블을 INNER JOIN
+         ON  a.orderno = b.orderno           -- JOIN 조건절
+    ORDER BY a.orderno                       -- 검색 결과의 정렬 순서
+
+# P248: JOIN 예2를 OUTER JOIN으로 변경
+SELECT a.orderno,    -- 주문번호
+       a.orddt,      -- 주문일자
+       a.memid,      -- 주문자 ID
+       b.goodscd,    -- 상품코드
+       b.qty,        -- 주문수량
+       b.amt         -- 주문금액
+    FROM `order_h` a LEFT OUTER JOIN `order_d` b  
+                     -- 두 개의 테이블을 OUTER JOIN
+         ON  a.orderno = b.orderno      -- JOIN 조건절
+    ORDER BY a.orderno                  -- 검색 결과의 정렬 순서
+
+
+# P249: SELF JOIN을 위한 테이블 열 추가 
+ALTER TABLE members
+        ADD COLUMN recommender VARCHAR(10) AFTER stat;
+
+# P249: SELF JOIN을 위해 추가한 열의 값 업데이트
+UPDATE members
+    SET recommender = 'kim1'
+    WHERE memid = 'seo' ;
+
+# P249: SELF JOIN을 위해 업데이트한 결과 확인
+SELECT memid, recommender 
+    FROM  `members`
+    WHERE  memid = 'seo' ;
+
+# P250: SELF JOIN
+SELECT a.memid, a.memname, b.memname '추천자'
+    FROM `members` a LEFT OUTER JOIN `members`  b
+                     ON a.recommender = b.memid
+    ORDER BY `memid`;
+
+# P251: Nested JOIN: 2번의 INNER JOIN 
+SELECT a.orderno,         -- 주문번호, order_h
+       a.orddt,           -- 주문일자, order_h
+       a.memid,           -- 주문자 ID, order_h
+       c.memname,         -- 주문자 이름, members
+       b.goodscd,         -- 상품코드, order_d
+       b.qty,             -- 주문수량, order_d
+       b.amt              -- 주문금액, order_d
+    FROM order_h a INNER JOIN order_d b   
+         ON  a.orderno = b.orderno
+         INNER JOIN  members  c  ON  a.memid = c.memid
+    ORDER BY a.orderno;
+
+# P252: Nested JOIN의 JOIN 절을 간단히할 때
+SELECT a.orderno,         -- 주문번호, order_h
+       a.orddt,           -- 주문일자, order_h
+       a.memid,           -- 주문자 ID, order_h
+       c.memname,         -- 주문자 이름, members
+       b.goodscd,         -- 상품코드, order_d
+       b.qty,             -- 주문수량, order_d
+       b.amt              -- 주문금액, order_d
+    FROM order_h a INNER JOIN (order_d b, members c)
+         ON  a.orderno = b.orderno  AND  a.memid = c.memid
+    ORDER BY a.orderno;
+
+# P253: 3개의 테이블을 JOIN: INNER JOIN과 LEFT OUTER JOIN
+SELECT a.orderno,       -- 주문번호, order_h
+       a.orddt,         -- 주문일자, order_h
+       a.memid,         -- 주문자 ID, order_h
+       c.memname,       -- 주문자 이름, members
+       b.goodscd,       -- 상품코드, order_d
+       b.qty,           -- 주문수량, order_d
+       b.amt            -- 주문금액, order_d
+    FROM order_h a INNER JOIN order_d b      ON a.orderno = b.orderno
+                   LEFT OUTER JOIN members c ON a.memid  = c.memid
+                   -- 첫 번째 JOIN은 INNER JOIN
+                   -- 두 번째 JOIN은 LEFT OUTER JOIN
+    ORDER BY a.orderno; -- 결과 데이터의 순서 정렬
+
+# P254: 앞의 예에서 FROM 절 이하를 변경
+SELECT a.orderno,       -- 주문번호, order_h
+       a.orddt,         -- 주문일자, order_h
+       a.memid,         -- 주문자 ID, order_h
+       c.memname,       -- 주문자 이름, members
+       b.goodscd,       -- 상품코드, order_d
+       b.qty,           -- 주문수량, order_d
+       b.amt            -- 주문금액, order_d
+    FROM (order_h a LEFT OUTER JOIN members c ON a.memid = c.memid)
+                    INNER JOIN order_d b      ON a.orderno = b.orderno
+    ORDER BY a.orderno;
+
+
+# P254: JOIN 실습
+SELECT a.orderno,        -- 주문번호, order_d
+       a.goodscd,        -- 상품코드, order_d
+       b.goodsname,      -- 상품이름, goodsinfo
+       a.qty,            -- 주문수량, order_d
+       a.amt             -- 주문금액, order_d
+    FROM order_d a LEFT OUTER JOIN goodsinfo b 
+                   ON a.goodscd = b.goodscd
+    ORDER BY a.orderno, a.goodscd;
+
+# P256: JOIN 실습
+SELECT a.orderno,        -- 주문번호, order_h
+       a.orddt,          -- 주문일자, order_h
+       a.memid,          -- 주문자ID, order_h
+       b.goodscd,        -- 상품코드, order_d
+       c.goodsname,      -- 상품이름, goodsinfo
+       b.qty,            -- 주문수량, order_d
+       b.amt             -- 주문금액, order_d
+    FROM order_h a INNER JOIN order_d b   ON a.orderno = b.orderno
+                   INNER JOIN goodsinfo c ON b.goodscd = c.goodscd
+    ORDER BY a.orderno;
+
+
+# P257: JOIN 실습: 4개의 테이블 JOIN
+SELECT a.orderno,        -- 주문번호, order_h
+       a.orddt,          -- 주문일자, order_h
+       a.memid,          -- 주문자ID, order_h
+       c.memname,        -- 주문자이름, members
+       b.goodscd,        -- 상품코드, order_d
+       d.goodsname,      -- 상품이름, goodsinfo
+       b.qty,            -- 주문수량, order_d
+       b.amt             -- 주문금액, order_d
+    FROM order_h a INNER JOIN order_d b   ON a.orderno = b.orderno
+                   INNER JOIN members c   ON a.memid = c.memid
+                   INNER JOIN goodsinfo d ON b.goodscd = d.goodscd
+    ORDER BY a.orderno;
+
+# P260: `jobinfo` 테이블 생성
+CREATE TABLE `jobinfo` ( 
+    jobcd   CHAR(1) NOT NULL,
+    jobname VARCHAR(20) NULL DEFAULT NULL,
+    PRIMARY KEY (jobcd)
+)
+COLLATE='utf8mb4_general_ci'
+ENGINE=INNODB;
+
+# P260: `jobinfo` 테이블에 데이터 입력
+INSERT INTO `jobinfo`  
+       VALUES ('1', '학생'), ('2', '회사원'), ('3', '공무원'),
+              ('4', '교사'), ('9','기타');
+
+# P260: `jobinfo` 테이블 데이터 확인
+SELECT * FROM `jobinfo`;
+
+# P261: `members` 테이블과 `jobinfo` 테이블 JOIN
+SELECT a.memid, a.memname, a.jobcd, b.jobname
+    FROM `members` a LEFT OUTER JOIN `jobinfo` b
+                     ON a.jobcd = b.jobcd;
+
+# P261: `unitinfo` 테이블 생성
+CREATE TABLE unitinfo ( 
+    unitcd   CHAR(2) NOT NULL,
+    unitname VARCHAR(20) NULL DEFAULT NULL,
+    PRIMARY KEY  (unitcd)
+    )
+COLLATE='utf8mb4_general_ci'
+ENGINE=INNODB;
+
+
+# P262: `unitinfo` 테이블에 데이터 입력
+INSERT INTO `unitinfo`  
+       VALUES ('01', '권'), ('02', 'EA'), 
+              ('03', 'BOX'), ('99', '기타');
+
+# P262: `unitinfo` 테이블의 데이터 확인
+SELECT * FROM `unitinfo`;
+
+# P262: `goodsinfo` 테이블과 `unitinfo` 테이블 JOIN
+SELECT a.goodscd, a.goodsname, a.unitcd, b.unitname
+    FROM `goodsinfo` a LEFT OUTER JOIN `unitinfo` b
+                       ON a.unitcd = b.unitcd;
+
+# P263: 6개 테이블 JOIN
+SELECT a.orderno,        -- 주문번호, order_h
+       a.orddt,          -- 주문일자, order_h
+       a.memid,          -- 주문자ID, order_h
+       c.memname,        -- 주문자이름, members
+       e.jobname,        -- 직업이름, jobinfo
+       b.goodscd,        -- 상품코드, order_h
+       d.goodsname,      -- 상품이름, goodsinfo 
+       f.unitname,       -- 단위이름, unitinfo
+       b.qty,            -- 주문수량, order_d
+       b.amt             -- 주문금액, order_d
+    FROM `order_h` a 
+             INNER JOIN `order_d` b       ON a.orderno = b.orderno
+             INNER JOIN `members` c       ON a.memid   = c.memid
+             INNER JOIN `goodsinfo` d     ON b.goodscd = d.goodscd
+             LEFT OUTER JOIN `jobinfo` e  ON c.jobcd   = e.jobcd
+             LEFT OUTER JOIN `unitinfo` f ON d.unitcd  = f.unitcd
+    ORDER BY a.orderno;
+
+# P265: `comm_codeinfo` 테이블 생성
+CREATE TABLE `comm_codeinfo` (
+    `prefix`   VARCHAR(5)  NOT NULL COMMENT '공통코드분류',
+    `comm_cd` VARCHAR(10) NOT NULL COMMENT '공통코드',
+    `comm_nm` VARCHAR(30) NOT NULL COMMENT '공통코드명',
+    `rsrv1`   VARCHAR(10) NULL DEFAULT NULL COMMENT '예비1',
+    `rsrv2`   VARCHAR(10) NULL DEFAULT NULL COMMENT '예비2',
+    `rsrv3`   VARCHAR(10) NULL DEFAULT NULL COMMENT '예비3',
+    `insdtm`  DATETIME  NULL DEFAULT current_timestamp() 
+                   COMMENT '등록일시',
+    `moddtm`  DATETIME NULL DEFAULT NULL,
+    PRIMARY KEY (`prefix`, `comm_cd`) 
+)
+COLLATE='utf8mb4_general_ci'
+ENGINE=InnoDB;
+
+
+# P266: `comm_codeinfo` 테이블에 데이터 추가
+INSERT INTO `comm_codeinfo` 
+    (`prefix`, `comm_cd`, `comm_nm`) 
+    VALUES
+    ('100', '1', '학생'), ('100', '2', '회사원'), 
+    ('100', '3', '공무원'), ('100', '4', '교사'), 
+    ('100', '9', '기타'), ('200', '01', '권'), 
+    ('200', '02', 'EA'), ('200', '03', 'BOX'), 
+    ('200', '99', '기타');
+
+# P266: `comm_codeinfo` 테이블의 데이터 확인
+SELECT  prefix, 
+        comm_cd, 
+        comm_nm
+    FROM comm_codeinfo  
+    ORDER BY  prefix, comm_cd;
+
+# P267: `comm_codeinfo` 테이블과 `members` 테이블 JOIN
+SELECT a.memid, 
+       a.memname,
+       a.jobcd,
+       b.comm_nm AS jobname
+    FROM members a LEFT OUTER JOIN comm_codeinfo b
+                   ON a.jobcd = b.comm_cd AND prefix = '100'
+    ORDER BY a.memid;
+
+
+# P267: `comm_codeinfo` 테이블과 `goodsinfo` 테이블 JOIN
+SELECT a.goodscd,
+       a.goodsname,
+       a.unitcd,
+       b.comm_nm AS unitname
+    FROM goodsinfo a LEFT OUTER JOIN comm_codeinfo b
+                     ON a.unitcd = b.comm_cd AND prefix = '200'
+    ORDER BY a.goodscd;
+
+# P268: `comm_codeinfo` 테이블과 4개 테이블 JOIN
+SELECT a.orderno, 
+       a.orddt,
+       a.memid,
+       c.memname,
+       e.comm_nm jobname, 
+       b.goodscd, 
+       d.goodsname, 
+       f.comm_nm unitname,
+       b.qty,
+       b.amt
+    FROM order_h a 
+            INNER JOIN order_d b   ON a.orderno = b.orderno
+            INNER JOIN members c   ON a.memid = c.memid
+            INNER JOIN goodsinfo d ON b.goodscd = d.goodscd  
+            LEFT OUTER JOIN comm_codeinfo e 
+                    ON c.jobcd = e.comm_cd AND e.prefix = '100'
+            LEFT OUTER JOIN comm_codeinfo f 
+                   ON d.unitcd = f.comm_cd AND f.prefix = '200'
+    ORDER BY a.orderno;
+
+# P269: 단일 행 서브 쿼리
+SELECT memid, 
+       memname 
+    FROM `members`
+    WHERE memid = (SELECT memid FROM `order_h` LIMIT 5, 1);
+
+# P270: 단일 행 서브 쿼리에서 사용한 서브 쿼리 부분
+SELECT memid FROM `order_h` LIMIT 5, 1;
+
+# P270: 단일 행 서브 쿼리에서 서브쿼리의 결과 셋을 서브 쿼리 부분에 대체 
+SELECT memid, 
+       memname 
+    FROM `members`
+    WHERE memid = ('hong1');
+
+# P271: 서브 쿼리의 결과 셋이 복수 행일 때
+SELECT memid, 
+       memname 
+    FROM `members`
+    WHERE memid = (SELECT memid FROM `order_h` LIMIT 5, 2);
+
+# P272: [NOT] EXISTS와 서브 쿼리 실습 1
+SELECT orderno, 
+       orddt, 
+       a.memid, 
+       ordamt
+    FROM order_h  a 
+    WHERE NOT EXISTS (SELECT * 
+                          FROM `members` b 
+                          WHERE a.memid = b.memid);
+
+# P272: [NOT] EXISTS와 서브 쿼리 실습 2
+SELECT a.memid, 
+       memname
+    FROM  members  a 
+    WHERE  NOT EXISTS (SELECT * 
+                           FROM order_h b 
+                           WHERE a.memid = b.memid);
+
+# P273: [NOT] EXISTS와 서브 쿼리 실습 3
+SELECT orderno, 
+       orddt, 
+       memid, 
+       ordamt
+    FROM order_h a
+    WHERE NOT EXISTS (SELECT * 
+                          FROM order_d  b 
+                          WHERE a.orderno = b.orderno);
+
+# P274: [NOT] EXISTS와 서브 쿼리 실습 4
+SELECT orderno, 
+       goodscd, 
+       qty, 
+       amt
+    FROM  order_d  a
+    WHERE  NOT EXISTS (SELECT * 
+                           FROM order_h  b 
+                           WHERE a.orderno = b.orderno);
+
+# P275:  [NOT] EXISTS와 서브 쿼리 실습 5
+SELECT orderno, a.goodscd 
+    FROM order_d  a
+    WHERE NOT EXISTS (SELECT * FROM goodsinfo b
+                          WHERE a.goodscd = b.goodscd );
+
+# P275:  [NOT] EXISTS와 서브 쿼리 실습 6
+SELECT a.goodscd, goodsname 
+    FROM goodsinfo  a
+    WHERE NOT EXISTS (SELECT * FROM order_d b
+                          WHERE a.goodscd = b.goodscd);
+
+# P276: 서브 쿼리와 ALL•ANY
+# `members` 테이블의 데이터 확인
+SELECT memid, memname, addr, birthday, 
+       jobcd, mileage, enterdtm, leavedtm 
+    FROM `members` 
+    ORDER BY memid;
+
+# P277: 서브 쿼리의 결과 셋이 여러 행이 되는 경우    
+SELECT memid, 
+       memname,
+       addr, 
+       jobcd 
+    FROM members  
+    WHERE jobcd >= (SELECT jobcd 
+                        FROM members 
+                        WHERE addr LIKE '%인천%');
+
+# 서브 쿼리만 실행한 결과(`memid` 열과 `addr` 열을 추가)
+SELECT memid, addr, jobcd 
+                        FROM members 
+                        WHERE addr LIKE '%인천%'
+
+# P278: ANY 연산자 사용
+SELECT memid, 
+       memname,
+       addr, 
+       jobcd 
+    FROM members  
+    WHERE jobcd >= ANY (SELECT jobcd 
+                            FROM members 
+                            WHERE addr LIKE '%인천%');
+# P279: ALL 연산자 사용
+SELECT memid, 
+       memname,
+       addr, 
+       jobcd 
+    FROM members  
+    WHERE jobcd >= ALL (SELECT jobcd 
+                            FROM members 
+                            WHERE addr LIKE '%인천%');
+
+# P280: DELETE에서 서브 쿼리 사용하기 
+# `order_h` 테이블 데이터 확인
+SELECT orderno, orddt, memid, ordamt, cancelyn, canceldtm 
+    FROM order_h;
+
+
+# P281: 서브 쿼리로 `order_h` 테이블에서 논리적 오류 데이터 삭제하기
+DELETE FROM `order_h`
+    WHERE memid IN 
+                (SELECT memid  
+                     FROM order_h  a
+                     WHERE NOT EXISTS
+                         (SELECT * FROM members b
+                              WHERE a.memid = b.memid));
+
+# P282
+# MySQL에서는 NOT EXISTS 연산자를 지원하지 않기 때문에 
+# 다음과 같이 쿼리문을 수정하여 MySQL에서 같은 결과를 만들 수 있다.
+#
+#DELETE FROM `order_h`
+#    WHERE memid NOT IN 
+#                (SELECT DISTINCT  a.memid FROM 
+#                    (SELECT order_h.memid 
+#                         FROM order_h INNER JOIN  members 
+#                         WHERE order_h.memid = members.memid ) 
+#                     AS a);
+
+# P282: 서브 쿼리로 `order_h` 테이블에서 논리적 오류 데이터 삭제하기
+DELETE FROM `order_h`
+    WHERE orderno IN 
+                  (SELECT orderno  
+                       FROM order_h  a
+                       WHERE NOT EXISTS
+                             (SELECT * FROM order_d b
+                                WHERE a.orderno = b.orderno));
+
+# P283
+# MySQL에서는 NOT EXISTS 연산자를 지원하지 않기 때문에 
+# 다음과 같이 쿼리문을 수정하여 MySQL에서 같은 결과를 만들 수 있다.
+#
+#DELETE FROM `order_h` 
+#    WHERE orderno NOT IN 
+#                  (SELECT DISTINCT a.orderno FROM 
+#                      (SELECT order_h.orderno 
+#                           FROM order_h INNER JOIN order_d 
+#                           WHERE order_h.orderno = order_d.orderno)
+#                      AS a);
+
+# P282: `order_h` 테이블에서 논리적 오류 데이터를 삭제한 결과 확인
+SELECT orderno, orddt, memid, ordamt, cancelyn, canceldtm 
+    FROM order_h;
+
+# P284: `order_d` 테이블의 데이터 확인
+SELECT orderno, goodscd, qty, amt
+    FROM order_d;
+
+# P285: `order_d` 테이블에서 논리적 오류 데이터 삭제 1
+DELETE FROM order_d 
+    WHERE goodscd IN 
+                  (SELECT goodscd  
+                       FROM order_d a 
+                       WHERE NOT EXISTS 
+                             (SELECT *  
+                                  FROM goodsinfo b 
+                                  WHERE a.goodscd = b.goodscd));
+
+# P286
+# MySQL에서는 NOT EXISTS 연산자를 지원하지 않기 때문에 
+# 다음과 같이 쿼리문을 수정하여 MySQL에서 같은 결과를 만들 수 있다.
+#
+#DELETE FROM order_d 
+#    WHERE goodscd NOT IN 
+#                  (SELECT DISTINCT a.goodscd FROM 
+#                       (SELECT order_d.goodscd 
+#                            FROM order_d INNER JOIN goodsinfo 
+#                        WHERE order_d.goodscd = 
+#                              goodsinfo.goodscd) 
+#                   AS a);
+
+# P286: `order_d` 테이블에서 논리적 오류 데이터 삭제 2
+DELETE FROM order_d 
+    WHERE orderno IN 
+                  (SELECT orderno
+                       FROM order_d a
+                       WHERE NOT EXISTS 
+                             (SELECT *  
+                                  FROM order_h b 
+				  WHERE a.orderno = b.orderno));
+
+# P286
+# MySQL에서는 NOT EXISTS 연산자를 지원하지 않기 때문에 
+# 다음과 같이 쿼리문을 수정하여 MySQL에서 같은 결과를 만들 수 있다.
+#
+#DELETE FROM order_d 
+#    WHERE orderno NOT IN 
+#                  (SELECT DISTINCT a.orderno FROM 
+#                      (SELECT order_d.orderno 
+#                           FROM order_d INNER JOIN order_h 
+#                           WHERE order_d.orderno = 
+#                                 order_h.orderno) 
+#                   AS a);
+
+
+# P287: INSERT에서 서브 쿼리 사용하기 
+# 서브 쿼리의 결과 셋으로 테이블 생성하기 
+CREATE TABLE `customer` (
+    `custid` VARCHAR(10) NOT NULL,
+    `custnm` VARCHAR(20) NOT NULL,
+    PRIMARY KEY (`custid`) USING BTREE
+)
+COLLATE='utf8mb4_general_ci'
+ENGINE=INNODB
+SELECT memid custid, memname custnm FROM members;
+
+# P287: 서브 쿼리를 사용하여 생성된 테이블의 데이터 확인
+SELECT * FROM customer;
+
+# P288: `customer` 테이블의 데이터 삭제
+DELETE FROM `customer`;
+# TRUNCATE `customer`;
+
+# P288: 서브 쿼리와 함께하는 INSERT 쿼리문으로 데이터 입력
+INSERT INTO `customer` (custid, custnm) 
+    SELECT memid, memname FROM `members`;
+
+
+# P289: UNION 절 사용하기 
+# UNION 절을 사용하기 위해 데잍 업데이트
+UPDATE `customer` 
+    SET custid = 'park1',
+        custnm = '박선수'
+    WHERE custid = 'park';
+
+# P290: UNION ALL절 사용하기 
+SELECT memid, memname FROM `members`
+UNION ALL
+SELECT custid, custnm FROM `customer`
+    ORDER BY memname ;
+
+# P291: UNION 절 사용하기 
+SELECT memid, memname FROM `members`
+UNION 
+SELECT custid, custnm FROM `customer`
+    ORDER BY memname;
+
+# P291: UNION ALL 절 사용하기 
+SELECT '1' AS `구분`, memid, memname FROM `members`
+UNION ALL
+SELECT '2' AS `구분`, custid, custnm FROM `customer`
+    ORDER BY 3
+    LIMIT 5;
+
+# P293: EXCEPT 절 사용하기 
+SELECT memid, memname FROM members
+EXCEPT 
+SELECT custid, custnm FROM customer
+    ORDER BY 2;
+
+# P293: INTERSECT 절 사용하기
+SELECT memid, memname FROM members
+INTERSECT
+SELECT custid, custnm FROM customer
+    ORDER BY 2;
+
+# P294: GROUP BY 절과 집계 함수
+# P295: SUM() 함수 사용 예
+SELECT SUM(ordamt) FROM order)h;
+SELECT SUM(ordamt) FROM order_h
+    WHERE orderno = '202201000';
+SELECT memid, SUM(ordamt) FROM order_h;
+
+# P295: SUM() 함수와 PARTITION BY 절 사용하기 
+# PARTITION BY 절을 사용하지 않을 때 
+SELECT memid, ordamt
+    FROM order_h
+    ORDER BY memid;
+
+# PARTITION BY 절을 사용할 때
+SELECT memid, 
+       SUM(ordamt) over (PARTITION BY memid) AS total
+    FROM order_h
+    ORDER BY memid;
+
+# P296: DISTINCT 절과 PARTITION BY 절 사용
+SELECT DISTINCT memid,
+                SUM(ordamt) over (PARTITION BY memid) AS total
+    FROM order_h ;
+
+# P296: GROUP BY 사용
+SELECT memid, SUM(ordamt) AS total
+    FROM order_h
+    GROUP BY memid ;
+
+# P297: 집계 함수: MAX() • MIN() 함수
+SELECT MAX(ordamt), MIN(ordamt) 
+    FROM order_h;
+
+# P298: 집계 함수: AVG() 함수
+SELECT AVG(ordamt) FROM order_h;
+
+SELECT memid, AVG(ordamt) FROM order_h GROUP BY memid;
+
+# P299: 집계 함수: COUNT() 함수
+SELECT COUNT(*) FROM `order_h`;
+SELECT CONVERT(orddt, CHAR(7)), COUNT(*) FROM `order_h` 
+    GROUP BY CONVERT(orddt, CHAR(7))
+    ORDER BY CONVERT(orddt, CHAR(7));
+SELECT COUNT(DISTINCT memname) FROM `members`;
+
+# P300: 집계 함수 사용 예 1
+SELECT orddt, SUM(ordamt)
+    FROM order_h 
+    GROUP BY orddt
+    ORDER BY orddt;
+
+# P300: 집계 함수 사용 예 2
+SELECT CONVERT(orddt, CHAR(7)) AS '연월', 
+       SUM(ordamt) AS '합계'
+    FROM order_h 
+    GROUP BY CONVERT(orddt, CHAR(7))
+    ORDER BY CONVERT(orddt, CHAR(7));
+
+# P301: 집계 함수 사용 예 3
+SELECT memid AS '주문자', 
+       SUM(ordamt) AS '합계'
+    FROM order_h 
+    GROUP BY memid
+    ORDER BY memid;
+
+# P302: 집계 함수 사용 예 4
+SELECT a.memid AS '주문자', 
+       b.memname AS '주문자명', 
+       SUM(a.ordamt) AS '합계'
+    FROM order_h a INNER JOIN members b ON a.memid = b.memid
+    GROUP BY a.memid
+    ORDER BY a.memid;
+
+# P302: GROUP BY 절에 없는 열을 SELECT 절에서 사용할 때 
+#       집계 함수 사용을 강제하는 경우
+SELECT a.memid AS '주문자', 
+       MAX(b.memname) AS '주문자명',  
+       SUM(ordamt) AS '합계'
+    FROM order_h a INNER JOIN members b ON a.memid = b.memid
+    GROUP BY a.memid
+    ORDER BY a.memid;
+
+# P303: 집계 함수 사용 예 5
+SELECT CONVERT(a.orddt, CHAR(7)) AS '연월', 
+       b.goodscd AS '상품코드', 
+       SUM(b.qty) AS '주문수량'
+    FROM order_h a INNER JOIN order_d b ON a.orderno = b.orderno
+    GROUP BY CONVERT(a.orddt, CHAR(7)), b.goodscd
+    ORDER BY CONVERT(a.orddt, CHAR(7)), b.goodscd;
+
+# P304: 집계 함수 사용 예 6
+SELECT b.goodscd AS '상품코드',
+       CONVERT(a.orddt, CHAR(7)) AS '연월', 
+       SUM(b.qty) AS '주문수량'
+    FROM order_h a INNER JOIN order_d b ON a.orderno = b.orderno
+    GROUP BY b.goodscd, CONVERT(a.orddt, CHAR(7))
+    ORDER BY b.goodscd, CONVERT(a.orddt, CHAR(7));
+
+# P305: 집계 함수 사용 예 7
+SELECT CONVERT(a.orddt, CHAR(7)) AS '연월', 
+       COUNT(*) AS '건수',
+       MAX(ordamt) AS '최대값', 
+       MIN(ordamt) AS '최소값'
+    FROM  order_h a  
+    WHERE YEAR(orddt) = 2022
+    GROUP BY CONVERT(a.orddt, CHAR(7))
+    ORDER BY CONVERT(a.orddt, CHAR(7));
+
+# P305: 집계 함수 사용 예 8
+SELECT CONVERT(a.orddt, CHAR(7)) AS '연월', 
+       AVG(ordamt) AS '평균값'
+    FROM order_h a 
+    WHERE YEAR(orddt) = 2022
+    GROUP BY CONVERT(a.orddt, CHAR(7))
+    ORDER BY CONVERT(a.orddt, CHAR(7));
+
+# P306: 집계 함수 사용 예 9
+SELECT CONVERT(orddt, CHAR(7)) AS '연월', 
+       AVG(ordamt) AS '평균값'
+    FROM order_h  
+    WHERE YEAR(orddt) = 2022
+    GROUP BY CONVERT(orddt, CHAR(7))
+UNION ALL
+SELECT CONVERT(orddt, CHAR(4)) AS '연월', 
+       AVG(ordamt) AS '평균값'
+    FROM order_h 
+    WHERE YEAR(orddt) = 2022
+ORDER BY '연월';
+
+# P307: 집계 함수 사용 예 10
+SELECT orderno, orddt, ordamt
+    FROM order_h  
+    WHERE ordamt > (SELECT AVG(ordamt) 
+                        FROM order_h WHERE YEAR(orddt) = 2002)
+          AND YEAR(orddt) = 2002;
+
+# P308: UPDATE에서 서브 쿼리 사용하기: 실습 데이터 정리
+UPDATE order_h, order_d 
+    SET order_h.ordamt = 
+                         (SELECT SUM(order_d.amt) 
+                              FROM order_d 
+                              WHERE order_h.orderno = 
+                                    order_d.orderno)
+    WHERE order_h.orderno = order_d.orderno;
+
+SELECT orderno, ordamt 
+    FROM `order_h` 
+    ORDER BY orderno ;
+
+# P310: 다차원 피벗 보고서 만들기
+SELECT b.goodscd AS '상품코드', goodsname AS '상품명',
+       SUM(CASE MONTH(a.orddt) WHEN 1 THEN amt ELSE 0 END) AS '1월',
+       SUM(CASE MONTH(a.orddt) WHEN 2 THEN amt ELSE 0 END) AS '2월',
+       SUM(CASE MONTH(a.orddt) WHEN 3 THEN amt ELSE 0 END) AS '3월',  
+       SUM(CASE MONTH(a.orddt) WHEN 4 THEN amt ELSE 0 END) AS '4월' 
+    FROM order_h a INNER JOIN order_d b   ON a.orderno = b.orderno
+                   INNER JOIN goodsinfo c ON b.goodscd = c.goodscd
+    WHERE YEAR(a.orddt) = 2022
+    GROUP BY b.goodscd
+    ORDER BY b.goodscd;   
+
+
+# P311: WITH ROLLUP 절 사용하기 1
+SELECT goodscd, 
+       SUM(qty) 
+    FROM order_d
+    GROUP BY goodscd WITH ROLLUP;
+
+# P312: WITH ROLLUP 절 사용하기 2
+SELECT orderno, goodscd, 
+       SUM(qty) 
+    FROM order_d
+    GROUP BY goodscd, orderno WITH ROLLUP; 
+
+# P313: 서브 쿼리를 사용하여 WITH ROLLUP 기능 구현하기 
+SELECT a.tp, a.orderno, a.goodscd, a.qty 
+    FROM (
+          -- 주문번호별 상품코드별 주문수량 합계를 구한다.
+          SELECT '1' tp, orderno, goodscd, SUM(qty) qty 
+              FROM order_d
+              GROUP BY orderno, goodscd
+          UNION ALL 
+          -- 상품코드별 주문수량 합계를 구한다. 
+          -- 주문번호 열에 ‘NULL’ 문자를 채움
+          SELECT '2' tp, 'NULL' orderno, goodscd, SUM(qty) qty 
+              FROM order_d
+              GROUP BY goodscd
+          UNION ALL 
+          -- 주문수량 총합계를 구한다. 
+          -- 주문번호와 상품코드 열에 ‘NULL’ 문자를 채움
+          SELECT '3' tp, 'NULL' orderno, 'NULL' goodscd, 
+                 SUM(qty) qty 
+             FROM order_d
+         ) a
+    ORDER BY a.goodscd, a.orderno;
+
+# P315: Common Table Expression 사용하기 
+WITH ordertotal (goodscd, total) AS
+        (SELECT goodscd, SUM(amt) FROM order_d GROUP BY goodscd)
+SELECT * FROM ordertotal ORDER BY total DESC;
+
+
+# P316: `address` 테이블 생성
+CREATE TABLE `address` (
+	`no` VARCHAR(3) NOT NULL COLLATE 'utf8mb4_general_ci',
+	`D_name` VARCHAR(20) NULL DEFAULT NULL COLLATE 'utf8mb4_general_ci',
+	`D_code1` VARCHAR(3) NULL DEFAULT NULL COLLATE 'utf8mb4_general_ci',
+	`D_code2` VARCHAR(3) NULL DEFAULT NULL COLLATE 'utf8mb4_general_ci'
+)
+COLLATE='utf8mb4_general_ci'
+ENGINE=InnoDB
+;
+
+# P316: `address` 테이블에 데이터 추가
+INSERT INTO `address` (NO, D_name, D_code1, D_code2)
+     VALUES ('1', '서울시', NULL, NULL), 
+            ('2', '인천시', NULL, NULL),
+            ('3', '마포구', '1', NULL),
+            ('4', '서구', '2', NULL), 
+            ('5', '서교동', '3', '1'),
+            ('6', '가좌동', '4', '2'),
+            ('7', '청라동', '4', '2'),
+            ('8', '합정동', '3', '1');
+
+# P316: 재귀적 CTE 사용
+WITH RECURSIVE tempaddr AS (
+        SELECT '1' AS 'Block',
+               no, D_Name, D_Code1, D_Code2 
+            FROM address
+            WHERE D_Name = '가좌동'
+        UNION ALL
+        SELECT '2' AS 'Block', 
+               a.no, a.D_Name, a.D_Code1, a.D_Code2 
+            FROM address AS a, tempaddr AS t
+            WHERE a.no = t.D_Code1
+       )
+SELECT * FROM tempaddr;
+
+# P318: HAVING 절 사용하기 
+SELECT memid, AVG(ordamt) AS average 
+    FROM order_h
+    GROUP BY memid
+    HAVING AVG(ordamt) > 10000;
+
+# P320: ROW_NUMBER() 함수
+SELECT orderno,  
+       MONTH(orddt) month, 
+       ordamt,  
+       ROW_NUMBER() 
+           OVER (PARTITION BY MONTH(orddt) ORDER BY ordamt DESC)
+       AS rank 
+    FROM order_h 
+    ORDER BY MONTH(orddt), rank;
+
+# P321: RANK() 함수
+SELECT orderno,  
+       MONTH(orddt) month, 
+       ordamt,  
+       RANK() 
+          OVER (PARTITION BY MONTH(orddt) ORDER BY ordamt DESC)
+       AS rank  
+    FROM order_h 
+    ORDER BY MONTH(orddt), rank;
+
+# P322: DENSE_RANK() 함수
+SELECT orderno,  
+       MONTH(orddt) month, 
+       ordamt,  
+       DENSE_RANK() 
+          OVER (PARTITION BY MONTH(orddt) ORDER BY ordamt DESC)
+       AS rank  
+    FROM order_h 
+    ORDER BY MONTH(orddt), rank;
+
+# P323: NTILE() 함수 1
+SELECT orderno, 
+       NTILE(3) OVER (ORDER BY orderno) AS rank 
+    FROM order_h
+    ORDER BY  orderno, rank;
+
+# P324: NTILE() 함수 2
+SELECT orderno, 
+       month(orddt) MONTH, 
+       ordamt, 
+       NTILE(3) OVER 
+           (PARTITION BY MONTH(orddt) ORDER BY orderno) AS RANK
+    FROM order_h
+    ORDER BY orderno, RANK, ordamt;
+
+# P325: PERCENT_RANK() • CUME_DIST() 함수
+SELECT ROW_NUMBER() OVER (ORDER BY ordamt DESC) as seq, 
+       orderno, ordamt,  
+       RANK() OVER (ORDER BY ordamt DESC) AS rank,
+       PERCENT_RANK() OVER (ORDER BY ordamt DESC) AS pct_rank
+       CUME_DIST() OVER (ORDER BY ordamt DESC) AS cum_dist
+    FROM order_h 
+    ORDER BY rank;
+
+# P327: LEAD() 함수
+SELECT ROW_NUMBER() OVER (ORDER BY ordamt DESC) AS seq, 
+       orderno, ordamt,  
+       LEAD(ordamt) OVER (ORDER BY ordamt DESC) AS ld1,
+       LEAD(ordamt, 1) OVER (ORDER BY ordamt DESC)  AS ld2, 
+       LEAD(ordamt, 2) OVER (ORDER BY ordamt DESC)  AS ld3, 
+       LEAD(ordamt, -2) OVER (ORDER BY ordamt DESC) AS ld4, 
+       LEAD(ordamt, -1) OVER (ORDER BY ordamt DESC) AS ld5  
+    FROM order_h 
+    ORDER BY seq;
+
+# P329: FIRST_VALUE() • LAST_VALUE() 함수
+SELECT orderno, 
+       ordamt,  
+       FIRST_VALUE(ordamt) OVER (ORDER BY ordamt) AS fst1,
+       LAST_VALUE(ordamt)  OVER (ORDER BY ordamt) AS lst1,	 
+       FIRST_VALUE(ordamt) OVER (ORDER BY ordamt DESC) AS fst2,
+       LAST_VALUE(ordamt)  OVER (ORDER BY ordamt DESC) AS lst2	 
+    FROM order_h 
+    ORDER BY ordamt;
+
+# p330: `members` 테이블의 데이터 확인
+SELECT memid, memname, addr, birthday FROM `members`;
+
+# P331: JOIN 결과를 뷰로 생성하기 
+CREATE OR REPLACE VIEW v_order_info
+    AS 
+        SELECT a.orderno, a.orddt, a.memid, 
+               c.memname, 
+               b.goodscd, d.goodsname, b.qty, b.amt
+            FROM order_h a INNER JOIN order_d b 
+                               ON a.orderno  = b.orderno
+                           INNER JOIN members c
+                               ON a.memid    = c.memid
+                           INNER JOIN goodsinfo d 
+                               ON b.goodscd = d.goodscd;
+
+# P333: 뷰의 데이터 확인 1
+SELECT * FROM v_order_info ORDER BY orderno;
+
+# P334: `members` 테이블의 뷰 생성
+CREATE OR REPLACE VIEW v_members_open
+    AS 
+        SELECT memid AS 'USERID', 
+               memname AS 'USERNAME', 
+               addr AS '주소',
+               jobcd AS '직업코드' 
+            FROM members;
+
+SELECT * FROM v_members_open;
+
+# P335: 뷰 정보 확인 1
+DESCRIBE v_members_open;
+
+# P335: 뷰 정보 확인 2
+SHOW CREATE VIEW v_members_open;
+
+# P337: 뷰 삭제
+DROP VIEW v_members_open;
+
+# P337: 뷰를 이용한 데이터 INSERT
+INSERT INTO v_members_open (USERID, USERNAME)  -- 뷰의 열 이름 사용
+    VALUES ( 'abcde', '뷰로 추가' );
+
+SELECT memid, memname, addr   -- `members` 테이블의 열 이름 사용
+    FROM members              -- 뷰를 생성하는 원본 데이터 테이블을 조회
+    WHERE memid = 'abcde';    -- 뷰에서 추가한 memid만 조회
+
+# P338: 뷰를 이용한 데이터 UPDATE
+UPDATE v_members_open 
+    SET `주소` = '제주도 서귀포시'   -- 뷰의 열 이름 사용
+    WHERE USERID = 'abcde';    -- 뷰의 열 이름 사용
+SELECT memid, memname, addr    -- `members` 테이블의 열 이름 사용 
+    FROM members               -- 뷰를 생성하는 원본 데이터 테이블을 조회
+        WHERE memid = 'abcde'; -- 뷰에서 업데이트한 memid만 조회
+
+# P338: 뷰를 이용한 데이터 DELETE
+DELETE FROM v_members_open 
+    WHERE  USERID = 'abcde'; -- 뷰의 열 이름 사용
+SELECT memid, memname, addr  -- `members` 테이블의 열 이름 사용 
+    FROM members             -- 뷰를 생성하는 원본 데이터 테이블을 조회
+    WHERE memid = 'abcde';   -- 뷰에서 삭제한 memid만 조회
+
+# P339: JOIN으로 생성된 뷰에 데이터 INSERT
+INSERT INTO v_order_info (orderno, orddt, memid)  -- 뷰의 열 이름 사용
+    VALUES ( '202203001', '2022-03-01', 'kim1' );
+SELECT orderno, orddt, memid    -- `members` 테이블의 열 이름 사용
+    FROM order_h;                -- 뷰를 생성하는 원본 데이터 테이블을 조회
+
+# P340: 뷰로 데이터 삭제 - 오류
+DELETE FROM v_order_info   
+    WHERE orderno = '202203001';   -- 뷰의 열 이름 사용
+
+# P340: 앞선 실습으로 추가한 데이터 삭제
+DELETE FROM order_h
+    WHERE orderno = '202203001';
+
+# P340: GROUP BY 절을 사용한 결과 셋을 뷰로 생성
+CREATE OR REPLACE VIEW v_groupby
+    AS 
+        SELECT memid, SUM(ordamt) AS total FROM order_h
+            GROUP BY memid ; 
+
+# P341: GROUP BY 절을 사용한 결과 셋으로 생성된 뷰에 데이터 INSERT
+INSERT INTO v_groupby (memid, total) VALUES (‘kim1’, 1000);
+
+# P342: 뷰 정보 확인 1
+SELECT TABLE_NAME, 
+       IS_UPDATABLE 
+    FROM information_schema.VIEWS
+    WHERE TABLE_SCHEMA = 'kamebook';
+
+# P343: 뷰 정보 확인 2
+USE information_schema;     -- 사용할 데이터베이스 선택
+SELECT TABLE_NAME,
+       IS_UPDATABLE 
+    FROM VIEWS              -- 데이터베이스 이름 생략
+    WHERE TABLE_SCHEMA = 'kamebook';

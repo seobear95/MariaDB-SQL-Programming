@@ -1,0 +1,170 @@
+#MariaDB로 따라하며 배우는 SQL 프로그래밍 
+
+# CHAPTER 10: 색인
+
+# P463: `members` 테이블의 색인 정보 확인
+SHOW INDEX FROM `members`;
+
+# P464: `order_d` 테이블의 색인 정보 확인
+SHOW INDEX FROM `order_d`;
+
+# P465: `order_d` 테이블의 색인 파일 정보 확인
+SHOW TABLE STATUS LIKE 'order_d';
+
+# P466: `members` 테이블의 `memname` 열에 색인 생성 -UNIQUE 사용
+CREATE UNIQUE INDEX idx_memname 
+    ON members(memname);
+
+# P467: `members` 테이블의 `memname` 열에 색인 생성
+CREATE INDEX idx_memname 
+    ON members(memname);
+
+# P467: `members` 테이블의 색인 파일 정보 확인
+SHOW TABLE STATUS LIKE 'members';
+
+# P468: 색인 삭제 
+DROP INDEX idx_memname ON members;
+
+# 또는
+
+ALTER TABLE members DROP INDEX idx_memname;
+
+# P468: 색인 삭제후 색인 정보 정리와 결과 확인
+ANALYZE TABLE `members`;
+SHOW TABLE STATUS LIKE 'members';
+
+
+# P469: 기본키 삭제 - DROP INDEX 문으로는 기본키 삭제할 수 없음
+ALTER TABLE members DROP PRIMARY KEY;
+
+# P469: `members` 테이블의 기본키 생성 
+ALTER TABLE members ADD PRIMARY KEY(memid);
+CREATE INDEX idx_memname 
+    ON members(memname);
+
+# 참고: 'employees.sql' 파일의 내용이 조금씩 변경되고 있다.
+#      실습 과정에서 데이터 행 수가 차이가 있어 결과를 확인하기 어렵다면
+#      본문의 쿼리문과 함께 있는 'employees.zip' 파일을 이용하여
+#      `employees` 데이터베이스를 설치하여 결과를 확인하면 
+#      본문과 같은 결과를 볼 수 있다. 
+# P476: `dept_emp` 테이블의 색인 정보 확인
+SHOW INDEX FROM dept_emp;
+
+# P477: `demp_emp` 테이블의 상태 정보 확인
+SHOW TABLE STATUS LIKE 'dept_emp';
+
+# P478: `dept_emp` 테이블의 색인 삭제 
+ALTER TABLE dept_emp DROP FOREIGN KEY dept_emp_ibfk_1;
+ALTER TABLE dept_emp DROP FOREIGN KEY dept_emp_ibfk_2;
+DROP INDEX  dept_no ON dept_emp;
+
+# P478: 색인 정보 정리와 상태 정보 확인
+ANALYZE TABLE `dept_emp`;
+SHOW TABLE STATUS LIKE 'dept_emp';
+
+# P479: `dept_emp` 테이블에서 기본키 제거 
+ALTER TABLE `dept_emp` DROP PRIMARY KEY;
+
+# P479: `dept_emp` 테이블의 첫 번째 데이터 확인
+SELECT * FROM  dept_emp ORDER BY emp_no ASC LIMIT 1;
+
+# P480: `dept_emp` 테이블의 마지막 데이터 확인
+SELECT * FROM  dept_emp ORDER BY emp_no DESC LIMIT 1;
+
+# P480: 전체 데이터 건수 확인, `emp_no` 열의 값이 10010인 데이터와 
+#       마지막 데이터의 실행 계획
+SELECT COUNT(*) FROM dept_emp;
+EXPLAIN SELECT * FROM dept_emp WHERE emp_no = 10010;
+EXPLAIN SELECT * FROM dept_emp WHERE emp_no = 499999;
+
+# P481: 기본키 설정 후 emp_no = 10010인 데이터 조회에 대한 실행 계획 확인 
+ALTER TABLE dept_emp ADD PRIMARY KEY (`emp_no`, `dept_no`);
+EXPLAIN SELECT * FROM dept_emp WHERE emp_no = 10010;
+
+# P482: 마지막 데이터의 실행 계획 확인
+EXPLAIN SELECT * FROM dept_emp WHERE emp_no = 499999;
+
+# P482: 조건을 만족하는 데이터의 실행 계획 확인 
+EXPLAIN SELECT * FROM  dept_emp 
+            WHERE emp_no = 10010 AND from_date = '1996-11-24';
+EXPLAIN SELECT * FROM  dept_emp 
+            WHERE from_date = '1996-11-24' AND emp_no = 10010;
+
+# P483: 조건을 만족하는 데이터 행수와 실행 계획 확인
+SELECT COUNT(*) FROM dept_emp 
+    WHERE dept_no = 'd006';       # 20,117 건의 데이터 조회
+EXPLAIN SELECT * FROM dept_emp 
+            WHERE dept_no = 'd006';
+
+# P484: `dept_no` 열에 색인 설정한 뒤에 실행 계획 확인
+CREATE INDEX dept_emp ON dept_emp(`dept_no`);
+EXPLAIN SELECT * FROM dept_emp 
+            WHERE dept_no = 'd006';
+
+# P485: 색인이 설정되지 않은 `from_date` 열을 사용하는 복합 조건 
+SELECT COUNT(*) FROM dept_emp 
+    WHERE dept_no = 'd006' AND from_date = '1996-11-24';    
+# 위의 SELECT 문은 3건의 데이터를 조회
+EXPLAIN  SELECT * FROM dept_emp 
+             WHERE dept_no = 'd006' AND 
+                   from_date = '1996-11-24'; 
+
+# P485: `from_date` 열에 색인 설정하고 위와 같은 조건의 데이터 검색과 실행 계획 확인
+CREATE INDEX from_date ON dept_emp(`from_date`);
+SELECT COUNT(*) FROM dept_emp 
+    WHERE dept_no = 'd006' AND from_date = '1996-11-24';    
+# 위의 SELECT 문은 3건의 데이터를 조회
+EXPLAIN  SELECT * FROM dept_emp 
+             WHERE dept_no = 'd006' AND 
+                   from_date = '1996-11-24';
+
+# P486: `dept_emp` 테이블이 색인 정보 삭제
+ALTER TABLE `dept_emp` DROP PRIMARY KEY;    # `dept_emp`의 기본키 삭제
+ALTER TABLE `dept_emp` DROP INDEX `dept_no`;   # 색인 ‘dept_no’ 삭제
+ALTER TABLE `dept_emp` DROP INDEX `from_date`; # 색인 ‘from_date’ 삭제
+ANALYZE TABLE dept_emp;                     # 테이블 분석 정보 업데이트
+
+# P486: `employees` 테이블의 외래키 삭제 
+# `salaries` 테이블에서 외래키 정의 ‘salaries_ibfk_1’ 삭제
+ALTER TABLE salaries  DROP FOREIGN KEY salaries_ibfk_1;
+
+# `dept_manager` 테이블에서 외래키 정의 ‘dept_manager_ibfk_1’ 삭제
+ALTER TABLE dept_manager  DROP FOREIGN KEY dept_manager_ibfk_1;
+
+# `titles` 테이블에서 외래키 정의 ‘titles_ibfk_1’ 삭제
+ALTER TABLE titles DROP FOREIGN KEY titles_ibfk_1;
+
+# P487: `employees` 테이블의 기본키 삭제와 색인 정보 반영
+# `employees` 테이블의 기본키 삭제
+ALTER TABLE employees DROP PRIMARY KEY;
+
+# 테이블 분석 정보 업데이트
+ANALYZE TABLE employeesept_emp;
+
+# P487: 색인이 설정되지 않은 `employees` 테이블과 `dept_emp` 테이블을 JOIN하는 실행 계획
+EXPLAIN SELECT a.emp_no, b.first_name, b.last_name 
+            FROM dept_emp a INNER JOIN employees b 
+                            ON a.emp_no = b.emp_no;
+EXPLAIN SELECT a.emp_no, b.first_name, b.last_name 
+            FROM dept_emp a INNER JOIN employees b 
+                            ON a.emp_no = b.emp_no 
+            WHERE a.emp_no = 10010;
+
+# P488: `dept_emp` 테이블과 `employees`테이블에 기본키 설정
+# `employees` 테이블에서 기본키 설정
+ALTER TABLE employees ADD PRIMARY KEY (`emp_no`);
+
+# `dept_emp` 테이블에서 기본키 설정
+ALTER TABLE dept_emp ADD PRIMARY KEY (`emp_no`, `dept_no`);
+
+EXPLAIN SELECT a.emp_no, b.first_name, b.last_name 
+            FROM dept_emp a INNER JOIN employees b 
+                            ON a.emp_no = b.emp_no;
+
+# P488: WHERE 절 추가한 실행 계획
+EXPLAIN SELECT a.emp_no, b.first_name, b.last_name 
+            FROM dept_emp a INNER JOIN employees b 
+                            ON a.emp_no = b.emp_no
+            WHERE a.emp_no = 10010;
+
+

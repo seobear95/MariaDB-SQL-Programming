@@ -1,0 +1,1214 @@
+#MariaDB로 따라하며 배우는 SQL 프로그래밍 
+
+# CHAPTER 9: 절차적 sQL 프로그래밍
+
+# P364: 주석 1
+SHOW INDEX TABLE order_d;    -- 테이블의 키 정보를 나타낸다.
+
+# P364: 주석 2
+SHOW INDEX TABLE order_d;    #테이블의 키
+
+# P365: 주석 3
+/* 여기서부터가 주석이다. 
+   SHOW INDEX TABLE 문은 지정한 테이블에 
+   설정된 키 정보를 표시한다. 
+   여기가 주석의 끝이다. */ 
+   SHOW INDEX TABLE order_d; 
+   
+# P365: 실행 가능한 주석
+SELECT 1 /*! + 1 */         # 주석 부분이 실행된다. 결과는 [그림 9.1]
+
+SELECT 2 /*M! + 1 */        # 주석 부분이 실행된다. 결과는 [그림 9.2]
+
+SELECT 3 /*M!100900 + 1 */  # 주석 부분이 실행된다. 결과는 [그림 9.3]
+
+# P367: 사용자 정의 변수 
+SET @A = 100, @B = 200; # @A와 @B의 데이터 유형은 정수가 된다.
+SET @C = @A + @B;       # @A와 @B의 값을 덧셈하여 @C에 저장, 
+                        # 따라서 @C는 정수형
+SELECT @A, @B, @C;      # 결과는 [그림 9.4]
+
+# P367: 사용자 정의 변수의 데이터 유형 결정
+SET @D = CAST('ABC' AS VARCHAR(5));  
+# MySQL에서는 CAST() 함수에서 VARCHAR는 적용되지 않는다. 
+# CHAR(5)를 사용해야 한다. 
+SET @E = CONVERT('DEF', CHAR(3));
+SET @F = CONCAT(@D, @E);
+SELECT @D, @E, @F, @G;   # @G는 값을 저장하지 않은 변수, 결과는 [그림 9.5]
+
+# P368: 데이터 조회할 때, 사용자 정의 변수 사용
+SELECT @id := memid, 
+       @nm := memname 
+    FROM members WHERE  memid = 'kim1';
+SELECT @id, @nm;            # 결과는 [그림 9.6]
+
+# P368: INTO 절 사용하여 변수에 대입
+SELECT memid, memname INTO @id, @nm 
+    FROM members 
+    WHERE memid = 'kim1';
+SELECT @id, @nm;            # 결과는 [그림 9.6]과 같다.
+
+# P369: 사용자 정의 변수에 2행 이상의 데이터를 대입할 때 오류 발생
+SELECT memid, memname INTO @id, @nm 
+    FROM members 
+    WHERE memname = '홍길동'; # `members` 테이블에 '홍길동'은 2행이 있다.
+SELECT @id, @nm;             # 결과는 [그림 9.7]과 같은 오류 메시지 
+
+# P369: 사용자 정의 변수에 할당할 결과 셋이 없을 때 오류 발생
+SELECT memid, memname INTO  @id, @nm 
+    FROM members 
+    WHERE memname = '홍길녀';
+SELECT @id, @nm;       # 결과는 [그림 9.8]과 같은 경고 메시지와 [그림 9.9]
+
+# P370: 데이터를 조회하는 중 경고 오류 발생
+SELECT CONVERT(orddt, CHAR(7)) INTO @yyyymm
+    FROM order_h
+    WHERE orderno = '202201003';
+SELECT @yyyymm;         # 결과는 [그림 9.10]과 같은 경고 메시지
+
+
+# P371: 날짜 유형의 데이터에서 일부를 사용할 때
+# 다음 예는 경고 오류 발생 
+SELECT CONVERT(orddt, CHAR(7)) INTO @yyyymm
+    FROM order_h WHERE orderno = '202201003';
+
+# 다음 예는 경고 오류 없음
+SELECT LEFT(CONVERT(orddt, CHAR), 7) INTO @yyyymm
+       FROM order_h WHERE orderno = '202201003';
+SELECT @yyyymm;
+
+SELECT LEFT(DATE_FORMAT(orddt, '%Y-%m'), 7) 
+           INTO @yyyymm
+    FROM order_h WHERE orderno = '202201003';
+SELECT @yyyymm;
+
+
+# P372: 사용자 정의 변수 목록 확인
+SELECT * 
+    FROM `information_schema`.`USER_VARIABLES`
+    ORDER BY 'VARIABLE_NAME';      # 결과는 [그림 9.11]
+
+# P373: BEGIN ... END 블록 구성
+BEGIN NOT ATOMIC
+    SET @A = 100, @B = 200;
+    SET @C = @A + @B;
+    SELECT @A, @B, @C; 
+END;
+
+# P375: IF ... END IF
+BEGIN NOT ATOMIC
+       SET @VAR1 = 100;
+       IF  @VAR1 = 100 THEN 
+           SELECT '@VAR1은 100이다.';
+       END IF;
+END;
+
+# P375: IF ... ELSE ... END IF
+BEGIN NOT ATOMIC
+    SET @VAR1 = 200;
+    IF @VAR1 = 100 THEN 
+        SELECT '@VAR1은 100이다.';
+    ELSE
+        SELECT '@VAR1은 100이 아니다.';
+    END IF;
+END;
+
+# P376: IF ... ELSEIF ... ELSE .... END IF
+BEGIN NOT ATOMIC
+    SET @VAR1 = 70;
+    IF @VAR1 > 100 OR @VAR1 < 0 THEN        # ①
+        SELECT '범위 밖의 값이다.' AS '등급';   # ②
+    ELSEIF @VAR1 >= 80 THEN                 # ③
+        SELECT '상' AS '등급';               # ④
+    ELSEIF @VAR1 >= 60 THEN                 # ⑤
+        SELECT '중' AS '등급';               # ⑥
+    ELSE                                    # ⑦
+        SELECT '하' AS '등급';               # ⑧
+    END IF;
+END;
+
+# P377: CASE ... END 1
+BEGIN NOT ATOMIC
+    SET @grade = 'A';
+    SET @estimate_score = CASE @grade
+                              WHEN 'A' THEN 90
+                              WHEN 'B' THEN 80
+                              WHEN 'C' THEN 70
+                              WHEN 'D' THEN 60
+                              ELSE 59
+                          END; 
+    IF @estimate_score >= 60 THEN
+        SELECT CONCAT(@estimate_score, '이상이다.');
+    ELSE
+        SELECT CONCAT(@estimate_score, '이하이다.');
+    END IF;
+END;
+
+
+# P378: CASE ... END 2
+BEGIN NOT ATOMIC
+    SET @point = 77;
+
+    SET @credit =  CASE 
+                       WHEN @point >= 90 THEN 'A'
+                       WHEN @point >= 90 THEN 'A'
+                       WHEN @point >= 80 THEN 'B'
+                       WHEN @point >= 70 THEN 'C'
+                       WHEN @point >= 60 THEN 'D'
+                       ELSE 'F'
+                   END;
+    SELECT CONCAT('취득 점수는 ==> ', CAST(@point AS CHAR(3))),
+           CONCAT('학점은 ==> ', @credit);
+END;
+
+# P380: WHILE ... END WHILE
+BEGIN NOT ATOMIC
+    SET @tot = 0;
+    SET @i = 0;
+    WHILE @i < 100 DO            # ①
+        SET @i = @i + 1;         # ②
+        SET @tot = @tot + @i;    # ③
+    END WHILE;                   # ④
+    SELECT @tot AS '합계';
+END;
+
+# P381: FOR ... END FOR 1
+BEGIN NOT ATOMIC
+    SET @tot = 0;
+    FOR ix IN 1 .. 100 DO        # ①
+        SET @tot = @tot + ix;    # ②
+    END FOR;                     # ③
+END;
+SELECT @tot AS '합계';
+
+# P382: FOR ... END FOR 2
+BEGIN NOT ATOMIC
+    SET @tot = 0;
+    SET @k = 2;                  # ①
+    FOR ix IN 1 .. 50 DO         # ②
+        SET @tot = @tot + @k;    # ③
+        SET @k = @k + 2;         # ④
+    END FOR;                     # ⑤
+END;
+SELECT @tot AS '합계';
+
+
+# P383: label • LEAVE • ITERATE / WHILE ... END WHILE
+DELIMITER $$
+BEGIN  NOT ATOMIC
+    # Block1
+    DROP TABLE IF EXISTS multiple7;
+    CREATE TEMPORARY TABLE multiple7 (
+        num INT,
+        tot INT
+    );
+    # Block2
+    SET @i = 1;                              
+    SET @tot = 0;                            
+    # Block3
+    loop1: WHILE @i <= 100 DO        
+               IF (@i % 7 = 0) THEN   # ①
+                   INSERT INTO multiple7 VALUES (@i, @tot);
+                   SET @i = @i + 1;   
+                   ITERATE loop1;     # ② label 'loop1'으로 실행 위치 이동 
+               END IF;
+               SET @tot = @tot + @i;  # ③
+               IF (@tot > 1000) THEN  # ④
+                   LEAVE loop1;       # ⑤ label 'loop1'이 부여된 
+                                      #    반복문의 범위를 탈출
+               END IF;
+               SET @i = @i + 1;        
+           END WHILE loop1;           # ⑥
+END
+$$
+# Block4
+SELECT ROWNUM() AS 'seq', num, tot FROM multiple7
+UNION ALL
+SELECT '합계' AS 'seq', @i, @tot;      
+
+# P385: label • LEAVE • ITERATE / FOR ... END FOR
+DELIMITER $$
+BEGIN  NOT ATOMIC
+    # Block1
+    DROP TABLE IF EXISTS multiple7;
+    CREATE TEMPORARY TABLE multiple7 (
+        num INT,
+        tot INT
+    );
+    # Block2
+    SET @tot = 0;                            
+    # Block3
+    loop1: FOR i IN 1 .. 100 DO
+               IF (i % 7 = 0) THEN    # ①
+                   INSERT INTO multiple7 VALUES ( i, @tot);
+                   ITERATE loop1;     # ② 이름 'loop1'으로 실행 위치 이동 
+               END IF;
+	       SET @last_i = @i;
+               SET @tot = @tot + i;   # ③
+               IF (@tot > 1000) THEN  # ④
+                   LEAVE loop1;       # ⑤ 이름 'loop1'이 부여된 
+                                      #   반복문의 범위를 탈출
+               END IF;
+           END FOR loop1;             # ⑥
+END
+$$
+# Block4
+SELECT ROWNUM() AS 'seq', num, tot FROM multiple7
+UNION ALL
+SELECT '합계' AS 'seq', @last_i, @tot;  # 변수 @i를 FOR 문에서 사용하지 않음.
+
+
+# P386: LOOP ... END LOOP
+DELIMITER $$
+BEGIN NOT ATOMIC
+    SET @i   = 0;             # 1부터 100까지의 숫자, 초기값 0 
+    SET @tot = 0;             # 합계, 초기값 0
+    loop1: LOOP
+        IF @i >= 100 THEN     # 변수 @i의 값이 100이상이면, 
+            LEAVE loop1;      # LEAVE 문으로 'loop1' 이름의 LOOP 범위 탈출
+        END IF;
+        SET @i = @i + 1;        # 변수 @i를 1 증가 
+        SET @tot = @tot + @i;   # 변수 @i의 값을 변수 @tot에 누적 
+    END LOOP loop1;
+END
+$$
+SELECT @tot AS '합계';         # 누적 결과인 변수 @tot의 값 나타내기 
+
+# P388: REPEAT ... UNTIL ... END REPEAT
+DELIMITER $$
+BEGIN NOT ATOMIC
+    SET @i   = 0;               # 1부터 100까지의 숫자, 초기값 0 
+    SET @tot = 0;               # 합계, 초기값 0
+    REPEAT
+        SET @i = @i + 1;        # 변수 @i를 1 증가 
+        SET @tot = @tot + @i;   # 변수 @i의 값을 변수 @tot에 누적 
+    UNTIL @i >= 100             # 조건절의 결과가 거짓이면 REPEAT부터 반복
+    END REPEAT;                  # UNTIL에서 조건절의 결과가 참이면 반복 종료
+END $$
+#DELIMITER ;
+SELECT @tot AS '합계';           # 누적 결과인 변수 @tot의 값 나타내기 
+
+# P390: DECLARE EXIT HANDLER 
+DELIMITER $$
+BEGIN NOT ATOMIC
+    #Block1
+    DECLARE EXIT HANDLER FOR SQLSTATE '23000'
+    BEGIN
+        SELECT '중복 키 오류';
+    END;
+    #Block2
+        INSERT INTO members (memid, memname) 
+               VALUES ('kim1', '김기자');
+        SELECT  "입력 성공";
+END
+$$
+
+
+# P391: DECLARE CONTINUE HANDLER 
+DELIMITER $$
+BEGIN NOT ATOMIC
+    #Block1
+    DECLARE CONTINUE HANDLER FOR SQLSTATE '23000'
+    BEGIN
+        SELECT '중복 키 오류';
+    END;
+    #Block2
+        INSERT INTO members (memid, memname) 
+               VALUES ('kim1', '김기자');
+        SELECT  '입력 성공';
+END
+$$
+
+
+# P392: GET DIAGNOSTICS
+DELIMITER $$
+BEGIN NOT ATOMIC
+    #Block1
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN 
+        GET DIAGNOSTICS CONDITION 1 @sqlstate = RETURNED_SQLSTATE, 
+                                    @errno = MYSQL_ERRNO, 
+                                    @text = MESSAGE_TEXT;
+        SELECT @sqlstate, @errno, @text; 
+    END;
+
+    #Block2
+    INSERT INTO members(memid, memname, mileage) 
+                VALUES('kim2', '김기자', 'abc');
+    SELECT '입력 성공';
+END
+$$
+
+# P394: PREPARE • EXECUTE 1
+DELIMITER $$
+BEGIN NOT ATOMIC
+    PREPARE q_name FROM "SELECT memid, memname 
+                             FROM members 
+                             WHERE memid = 'kim1'";
+    EXECUTE q_name;
+END
+$$
+
+# P395: PREPARE • EXECUTE 2
+DELIMITER $$
+BEGIN NOT ATOMIC
+    PREPARE q_name FROM "SELECT memid, memname 
+                             FROM members 
+                             LIMIT  ?, ?";
+    EXECUTE q_name USING 2, 3;
+END
+$$
+
+
+# P398: TRANSACTION - ROLLBACK
+START TRANSACTION;
+    UPDATE members 
+        SET birthday = '1995-02-01' WHERE memid = 'hong1';
+    UPDATE members 
+        SET birthday = '1996-03-01' WHERE memid = 'hong2';
+    UPDATE members 
+        SET birthday = '1997-03-01' WHERE memid = 'kim1';
+COMMIT;
+SELECT memid, memname, birthday FROM members;
+
+# P400: TRANSACTION - COMMIT
+DELIMITER $$
+BEGIN NOT ATOMIC
+    DECLARE exit HANDLER FOR SQLEXCEPTION ROLLBACK;
+    START TRANSACTION
+        UPDATE members 
+            SET birthday = '1998-2-2' WHERE memid = 'hong1';
+        UPDATE members 
+            SET birthday = '1997-3-3' WHERE memid = 'hong2';
+        UPDATE members 
+            SET birthday = '1998-4-31' WHERE memid = 'kim1';
+    COMMIT;
+END
+$$
+SELECT memid, memname, birthday FROM members;
+
+# P400: TRANSACTION을 사용한 두 개 테이블의 데이터 업데이트
+DELIMITER $$
+BEGIN NOT ATOMIC
+    DECLARE exit HANDLER FOR SQLEXCEPTION ROLLBACK;
+    START TRANSACTION; 
+        UPDATE order_h 
+            SET ordamt = 25000  WHERE orderno = '202202003';
+        INSERT INTO order_d (orderno, goodscd, unitcd, 
+                             unitprice, qty, amt) 
+               VALUES('202202003', 'GDS02', '88', 
+                      100, 50, 5000);
+    COMMIT;
+END
+$$
+
+# P402: 지역변수 사용
+DELIMITER $$
+BEGIN NOT ATOMIC
+    DECLARE i   INTEGER DEFAULT 0;  # 지역변수 i 선언, 초기값 0
+    DECLARE tot INTEGER DEFAULT 0;  # 지역변수 tot 선언, 초기값 0
+    loop1: LOOP
+               IF i >= 100 THEN
+                   LEAVE loop1;
+               END IF;
+               SET i = i + 1;
+               SET tot = tot + i;
+           END LOOP loop1;
+    SELECT tot;                     # END 문 다음에 사용할 수 없음
+END
+$$
+
+
+# P406: CURSOR 1
+DELIMITER $$
+BEGIN NOT ATOMIC
+
+    #Block1
+    DECLARE done      BIT(1) DEFAULT FALSE;
+    DECLARE smemid    VARCHAR(10);
+    DECLARE smemname  VARCHAR(20);
+
+    #Block2
+    DECLARE cur_1 CURSOR FOR
+        SELECT memid, memname FROM members ORDER BY memid;
+    #Block3
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    #Block4
+    OPEN cur_1;
+
+    read_loop: LOOP
+                   FETCH cur_1 INTO smemid, smemname;
+                   IF done THEN
+                       LEAVE read_loop;
+                   END IF;
+                   SELECT smemid, smemname;
+               END LOOP read_loop; 
+
+    CLOSE cur_1;
+END
+$$
+
+# P407: CURSOR 2
+#Block1
+CREATE TEMPORARY TABLE IF NOT EXISTS `members_t` (
+       tmemid VARCHAR(10) NOT NULL,
+       tmemname VARCHAR(20) NOT NULL,
+       tbirthday DATE
+);
+
+#Block2
+DELIMITER $$
+BEGIN NOT ATOMIC
+    #Block3
+    DECLARE done      BIT(1) DEFAULT FALSE;
+    DECLARE smemid    VARCHAR(10);
+    DECLARE smemname  VARCHAR(20);
+    DECLARE dbirthday DATE;
+
+    #Block4
+    DECLARE cur_1 CURSOR
+        FOR
+            SELECT memid, memname, birthday 
+                FROM members ORDER BY memid;
+
+    #Block5
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    #Block6
+    OPEN cur_1;
+
+    read_loop: LOOP
+                   FETCH cur_1 INTO smemid, smemname, dbirthday;
+                   IF done THEN
+                       LEAVE read_loop;
+                   END IF;
+
+                   #Block7
+                   IF (SELECT COUNT(*) 
+                           FROM members_t 
+                           WHERE tmemid = smemid) = 0 THEN
+                       INSERT INTO members_t VALUES 
+                           (smemid, smemname, dbirthday);
+                   ELSE
+                       UPDATE members_t 
+                           SET tmemname = smemname, 
+                               tbirthday = dbirthday
+                           WHERE tmemid = smemid;
+                END IF;
+               #Block8
+               END LOOP read_loop; 
+
+    CLOSE cur_1;
+
+END
+$$
+
+#Block9
+SELECT * from members_t;
+
+
+# P412: 저장 프로시저(Stored Procedures)
+DELIMITER $$
+CREATE OR REPLACE PROCEDURE sp_test1()
+BEGIN
+    SELECT memid, memname FROM members;
+END $$
+DELIMITER ;
+
+# P413: sp_test1 저장 프로시저 호출 실행
+CALL sp_test1;
+
+# P413: IN 인수를 사용하는 저장 프로시저
+DELIMITER $$
+CREATE OR REPLACE PROCEDURE sp_test2(IN id VARCHAR(10))
+BEGIN
+    SELECT memid, memname FROM members WHERE memid = id;
+END $$
+DELIMITER ;
+
+# P413: sp_test2 저장 프로시저 실행
+# 저장 프로시저 호출
+CALL sp_test2('hong1');
+
+# P414: IN, OUT 인수를 사용하는 저장 프로시저
+DELIMITER $$
+CREATE OR REPLACE PROCEDURE sp_test3(IN id VARCHAR(10), 
+                                     OUT nm VARCHAR(20))
+BEGIN
+    SELECT memname INTO nm FROM members WHERE memid = id;
+END $$
+DELIMITER ;
+
+# P414: sp_test3 저장 프로시저 실행
+# 저장 프로시저 호출
+CALL sp_test3('hong1', @rnm);
+SELECT @rnm;
+
+# P415: 저장 프로시저 목록 확인 - `information_schema`.`ROUTINES` 테이블 사용
+SELECT routine_name,             # 등록된 저장 프로시저의 이름
+       routine_definition,        # 등록된 저장 프로시저의 내용
+       created,                  # 등록된 저장 프로시저의 생성 일시
+       last_altered              # 등록된 저장 프로시저의 최종 수정 일시
+       FROM `information_schema`.`ROUTINES`
+       WHERE `routine_schema` = 'kamebook' AND 
+              `routine_type` = 'PROCEDURE';
+
+
+# P416: 저장 프로시저 파라미터 확인 - `information_schema`.`PARAMETERS` 테이블 사용
+SELECT specific_name,           # 매개 변수를 사용하는 저장 프로시저의 이름
+       ordinal_position,       # 사용된 매개변수의 순서 번호
+       parameter_mode,         # IN, OUT 매개 변수 구분
+       parameter_name,         # 매개 변수의 이름
+       data_type               # 매개 변수의 데이터 유형
+    FROM `information_schema`.`PARAMETERS`
+    WHERE `specific_schema` = 'kamebook';
+
+# P417: 저장 프로시저 목록 확인 - `mysql`.`proc` 테이블 사용
+SELECT NAME,                 # 등록된 저장 프로시저의 이름
+       param_list,           # 저장 프로시저의 매개 변수 목록
+       body                  # 저장 프로시저의 내용
+    FROM `mysql`.`proc`
+    WHERE db = 'kamebook' AND TYPE = 'PROCEDURE';
+
+# P419: 저장 프로시저 실습 1
+DELIMITER $$
+CREATE OR REPLACE PROCEDURE sp_members_insert(IN id VARCHAR(10), 
+                                              IN nm VARCHAR(20), 
+                                              IN birth DATE, 
+                                              OUT rv INT)
+BEGIN
+    DECLARE exit HANDLER FOR SQLEXCEPTION SET rv = 0;
+    INSERT INTO members (memid, memname, birthday) 
+           VALUES ( id, nm, birth );
+    SET rv = 1;
+END $$
+DELIMITER ;
+
+# P420: 저장 프로시저 sp_members_insert 사용
+# 저장 프로시저 'sp_members_insert' 호출 준비
+SET @id = 'SON';
+SET @nm = '흥민';
+SET @dt = '2000-01-01';
+
+# 저장 프로시저 호출
+CALL sp_members_insert(@id, @nm, @dt, @rv);
+SELECT @rv;      # 저장 프로시저에서 반환된 값을 조회
+
+# P420: 저장 프로시저를 사용해서 INSERT한 데이터 확인
+SELECT memid, memname, birthday  
+    FROM members 
+    WHERE  memid = 'SON';
+
+# P421: 저장 프로시저 실습 2: 월벌 통계 보고서 작성
+# 월별 통계보고서 작성을 위한 `monthly_order_mst` 테이블 생성
+DROP TABLE IF EXISTS `montyly_order_mst`;
+CREATE TABLE `montyly_order_mst` (
+    goodscd  CHAR(5)  NOT NULL,
+    ord_ym   CHAR(7)  NOT NULL,
+    Namt     DECIMAL(10, 0) NULL DEFAULT 0,
+    Camt     DECIMAL(10, 0) NULL DEFAULT 0,
+    PRIMARY KEY(goodscd, ord_ym)
+)
+COLLATE='utf8mb4_general_ci'
+ENGINE=InnoDB
+;
+
+# `order_h` 테이블과 `order_d` 테이블을 JOIN하여 
+# `monthly_order_mst` 테이블에 입력할 통계보고서용 데이터를 
+# 조회하는 저장 프로시저를 생성한다. 
+# 입력 매개 변수: 통계보고서를 작성하려는 연월
+# 출력 매개 변수: `monthly_order_mst` 테이블에 생성된 데이터 건수
+DELIMITER $$
+CREATE OR REPLACE PROCEDURE sp_closing (IN ym CHAR(7), OUT rv int)
+BEGIN 
+    # 필요한 지역변수 정의
+    DECLARE NotFound INT DEFAULT FALSE; # 커서 위치가 EOF일 때 사용할 변수
+    DECLARE ErrFound INT DEFAULT FALSE; # 커서 내부의 쿼리문에서 
+                                        # 오류 발생 여부 판단 변수
+    DECLARE wkcd     CHAR(5);           # 커서에서 사용할 '상품코드' 변수
+    DECLARE wkNamt   DECIMAL(10, 0);    # 커서에서 사용할 '정상 주문금액의 합계' 변수
+    DECLARE wkCamt   DECIMAL(10, 0);    # 커서에서 사용할 '취소 주문금액의 합계' 변수
+    DECLARE inscnt   INT DEFAULT 0;     # 월별 생성된 데이터 건수 
+
+    # 커서 생성
+    -- `order_h` 테이블과 `order_d` 테이블을 INNER JOIN하여 
+    -- 상품코드 별로 SUM() 함수로 정상 주문금액의 합계와 취소 주문금액의 합계 계산
+    DECLARE trns_order CURSOR FOR   
+        SELECT b.goodscd, 
+               SUM(CASE WHEN a.cancelyn = 'N' THEN b.amt ELSE 0 END),
+               SUM(CASE WHEN a.cancelyn = 'Y' THEN b.amt ELSE 0 END)
+            FROM order_h a INNER JOIN order_d b ON a.orderno = b.orderno 
+            WHERE CONVERT(a.orddt, CHAR(7)) = @param_ym
+            GROUP BY b.goodscd;
+
+    # 오류 처리를 위한 HANDLER 정의 
+    -- 커서가 EOF에 위치할 때 발생하는 NOT FOUND 핸들러 정의
+    -- NOT FOUND 상황이면, 지역변수 NotFound를 TRUE로 설정하고 CONTINUE 
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET NotFound = TRUE; 
+    -- 쿼리문을 실행할 때 발생하는 오류를 처리하기 위한 핸들러 정의 
+    -- 쿼리문 실행 중 오류가 발생하면, 
+    -- 지역변수 ErrFound를 TRUE로 설정하고 CONTINUE
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION SET ErrFound = TRUE;
+
+    # 저장 프로시저에서 전달받은 입력 매개 변수를 전역변수에 저장
+    -- 커서 생성을 위한 쿼리문에서 지역변수를 사용할 수 없기 때문에 
+    -- 지역변수 값을 전역변수에 전달하여 커서 정의 내부 쿼리문에서 사용
+    SET @param_ym = ym; 
+
+    # 커서 OPEN
+    OPEN trns_order; 
+    START TRANSACTION; 
+    # 테이블 `monthly_order_mst`에서 입력 매개 변수의 값과 같은 '연월'의 데이터를
+    # 삭제한다. 이는 동일 연월의 작업을 2번이상 실행하면 '기본키 중복 오류'가 
+    # 발생하는 오류를 방지하기 위함이다. 
+    DELETE FROM `monthly_order_mst` WHERE ord_ym = ym; 
+    read_loop: LOOP
+                   # 커서에서 한 행의 데이터를 읽어 지역변수에 저장 
+                   -- 커서에서 한 행을 읽어 지역변수에 저장
+                   FETCH trns_order INTO wkcd, wkNamt, wkCamt;
+
+                   -- 커서에서 행을 읽은 뒤 지역변수 NotFound 값을 확인
+                   -- 커서 위치가 EOF가 되면 핸들러에 의해서 
+                   -- 지역변수 NotFount가 TRUE가 되어
+                   -- LEAVE 문으로 LOOP ... END LOOP 반복 범위를 탈출
+                   IF NotFound THEN 
+                       LEAVE read_loop;
+                   END IF;
+
+                   # 커서에서 읽은 데이터를 `monthly_order_mst` 테이블에 입력 
+                   -- 커서 위치가 EOF가 아닐 때, 즉 데이터를 읽었을 때 실행할 부분으로 
+                   -- FETCH 문에 의해 지역변수에 저장된 데이터를 
+                   -- `monthly_order_mst` 테이블에 입력
+                   INSERT INTO `monthly_order_mst` 
+                          VALUES (wkcd, ym, wkNamt, wkCamt);
+
+                   # INSERT 쿼리문에서 오류 발생 여부 확인
+                   -- INSERT 쿼리문에서 오류 발생하면, 핸들러에 의해 지역변수 ErrFound가 
+                   -- TRUE로 설정되어 LEAVE 문으로 LOOP ... END LOOP 반복 범위를 탈출
+                   IF ErrFound THEN 
+                       LEAVE read_loop;
+                   END IF;	
+                   -- INSERT 쿼리문이 정상 실행되었을 때 
+                   -- 실행할 부분으로 INSERT된 데이터 건수 증가
+                   SET inscnt = inscnt + 1;
+
+               END loop read_loop;
+
+    # 커서 닫기 
+    CLOSE trns_order;
+
+    # 커서 내에서 INSERT 쿼리문 실행 중 오류 발생한 경우 확인
+    # -- 저장 프로시저에서 반환할 값 설정과 
+    # -- ROLLBACK 문으로 이전에 실행된 INSERT 쿼리문의 결과 반영을 취소 
+    IF ErrFound THEN
+        SET rv = 0;
+        ROLLBACK;
+    ELSE
+        -- INSERT 쿼리문 실행 중 오류가 없으면,
+        -- 저장 프로시저에서 INSERT된 데이터 건수로 반환값 설정 
+        -- COMMIT 문으로 이전에 실행된 INSERT 쿼리문의 결과를 데이터베이스에 반영
+        SET rv = inscnt;
+        COMMIT;
+    END IF;
+
+END $$
+DELIMITER ;
+
+# P424: 저장 프로시저 sp_closing 실행
+SET @ym = '2022-01';
+CALL sp_closing(@ym, @rv);  # 저장 프로시저 호출, IN과 OUT 매개 변수 사용
+SELECT @rv;                 # 저장 프로시저에서 반환된 결과 확인 
+
+SELECT * FROM `monthly_order_mst`;
+
+
+# P428: 트리거 실습을 위한 TEMPORARY TABLE 생성
+CREATE TEMPORARY TABLE members_tg_test (
+       content TEXT NULL,
+       event_type VARCHAR(10) NULL,
+       insdtm DATETIME NULL DEFAULT CURRENT_TIMESTAMP()
+)
+COLLATE='utf8mb4_general_ci'
+ENGINE=InnoDB;
+
+
+# P428: AFTER 트리거 - INSERT 트리거
+DELIMITER $$
+CREATE OR REPLACE
+    TRIGGER tg_members_temp_insert AFTER INSERT
+            ON members_temp FOR EACH ROW
+    BEGIN
+        DECLARE cont TEXT;           
+        SET cont = CONCAT(NEW.memid, NEW.memname);
+        INSERT INTO members_tg_test (content, event_type) 
+               VALUES (cont, 'INSERT');
+    END $$
+DELIMITER ;
+
+# P429: AFTER 트리거 사용을 위한 INSERT
+INSERT INTO `members_temp` (memid, memname)
+            VALUES ('abcde', '트리거 테스트');
+
+# P429: 트리거에 의해 `members_tg_test` 테이블에 입력된 데이터 확인 
+SELECT * FROM members_tg_test;
+
+# P429: AFTER 트리거 - UPDATE 트리거
+DELIMITER $$
+CREATE OR REPLACE
+    TRIGGER tg_members_temp_update AFTER UPDATE
+            ON members_temp FOR EACH ROW
+    BEGIN
+        #Block1
+        DECLARE cont_old TEXT;                             # ①
+        DECLARE cont_new TEXT;                             # ②
+
+        #BLock2
+        SET cont_old = CONCAT(OLD.memid, OLD.memname);     # ③
+        INSERT INTO members_tg_test (content, event_type)  # ④
+               VALUES (cont_old, 'UPDATE_OLD');
+       
+        SET cont_new = CONCAT(NEW.memid, NEW.memname);     # ⑤
+        INSERT INTO members_tg_test (content, event_type)  # ⑥
+               VALUES (cont_new, 'UPDATE_NEW');
+    END $$
+DELIMITER ;
+
+# P431: AFTER 트리거 사용을 위한 UPDATE
+UPDATE members_temp
+    SET memname = '업데이트 테스트' 
+    WHERE  memid = 'abcde';
+
+# P431: 트리거에 의해 `members_tg_test` 테이블에 입력된 데이터 확인
+SELECT * FROM members_tg_test;
+
+# P431: AFTER 트리거 - DELETE 트리거
+DELIMITER $$
+CREATE OR REPLACE
+    TRIGGER tg_members_temp_delete AFTER DELETE
+            ON members_temp FOR EACH ROW
+    BEGIN
+        DECLARE cont_old TEXT;                            # ①
+
+        SET cont_old = CONCAT(OLD.memid, OLD.memname);    # ②
+        INSERT INTO members_tg_test (content, event_type) # ③
+               VALUES (cont_old, 'DELETE');
+    END $$
+DELIMITER ;
+
+# P432: AFTER 트리거 사용을 위한 DELETE
+DELETE FROM members_temp 
+       WHERE memid = 'abcde';
+
+# P432: 트리거에 의해 `members_tg_test` 테이블에 입력된 데이터 확인
+SELECT * FROM members_tg_test;
+
+
+# P433: BEFORE 트리거 - INSERT 
+DELIMITER $$
+CREATE OR REPLACE
+    TRIGGER tg_members_temp_insert_b BEFORE INSERT
+            ON members_temp FOR EACH ROW  
+BEGIN
+    DECLARE cont TEXT;                                # ①
+    SET NEW.memname = CONCAT('before', NEW.memname);  # ②
+    SET cont = CONCAT(NEW.memid, NEW.memname);        # ③
+    INSERT INTO members_tg_test (content, event_type) # ④
+           VALUES (cont, 'B_INSERT');
+END $$
+DELIMITER ;
+
+# P434: BEFORE 트리거를 사용을 위한 INSERT
+INSERT INTO members_temp (memid, memname) 
+       VALUES ('abcde', '트리거 테스트');
+
+# P434: 트리거에 의해 `members_tg_test` 테이블에 입력된 데이터 확인
+SELECT * FROM members_tg_test;
+
+
+# P435: 트리거 실행을 위해 입력한 데이터 확인
+SELECT memid, memname, enterdtm 
+    FROM members_temp
+    WHERE memid = 'abcde';
+
+# P436: 시그널
+DELIMITER $$
+CREATE OR REPLACE
+    TRIGGER tg_members_temp_insert_b BEFORE INSERT
+            ON members_temp FOR EACH ROW
+BEGIN
+    DECLARE cont TEXT;
+    IF NEW.memname IS NULL THEN
+        SIGNAL SQLSTATE '90000' 
+            SET MESSAGE_TEXT = '이름이 NULL 입니다.';
+    ELSE
+        SET cont = CONCAT(NEW.memid, NEW.memname);
+        INSERT INTO  members_tg_test (content, event_type) 
+               VALUES (cont, 'B_INSERT');
+    END IF;
+END $$
+DELIMITER ;
+
+# P436: 시그널 확인을 위한 BEFORE INSERT 트리거 사용
+DELIMITER $$
+BEGIN NOT ATOMIC
+    DECLARE exit HANDLER FOR SQLEXCEPTION 
+    BEGIN 
+        GET DIAGNOSTICS CONDITION 1 @sql_state = RETURNED_SQLSTATE,
+                                    @errno = MYSQL_ERRNO, 
+                                    @err_text = MESSAGE_TEXT;
+        SELECT @sql_state, @errno, @err_text;
+    END;
+
+    INSERT INTO members_temp (memid, memname) 
+           VALUES ('abcdefg', NULL);
+END
+$$
+
+# P437: 트기거를 이용한 테이블 로그 생성 기능 구현
+# P437: 로그 저정을 위한 테이블 생성
+CREATE TABLE `members_log` (
+    `idx` INT(11) NOT NULL AUTO_INCREMENT, 
+    `memid` VARCHAR(10) NOT NULL 
+                  COMMENT '회원ID' COLLATE 'utf8mb4_general_ci',
+    `memname` VARCHAR(20) NOT NULL 
+                  COMMENT '회원명' COLLATE 'utf8mb4_general_ci',
+    `passwd` VARCHAR(128) NULL DEFAULT NULL 
+                  COMMENT '암호' COLLATE 'utf8mb4_general_ci',
+    `passwdmdt` DATETIME NULL DEFAULT NULL COMMENT '최종암호변경일시',
+    `jumin` VARCHAR(64) NULL DEFAULT NULL 
+                  COMMENT '주민등록번호' COLLATE 'utf8mb4_general_ci',
+    `addr` VARCHAR(100) NULL DEFAULT NULL 
+                  COMMENT '주소' COLLATE 'utf8mb4_general_ci',
+    `birthday` DATE NULL DEFAULT NULL COMMENT '생년월일',
+    `jobcd` CHAR(1) NULL DEFAULT NULL 
+                  COMMENT '직업코드' COLLATE 'utf8mb4_general_ci',
+    `mileage` DECIMAL(7,0) UNSIGNED NULL COMMENT '마일리지',
+    `stat` ENUM('Y','N') NOT NULL 
+                  COMMENT '상태' COLLATE 'utf8mb4_general_ci',
+    `recommender` VARCHAR(10) NULL DEFAULT NULL 
+                  COMMENT '추천자ID' COLLATE 'utf8mb4_general_ci',
+    `enterdtm` DATETIME NULL COMMENT '가입일시',
+    `leavedtm` DATETIME NULL DEFAULT NULL COMMENT '탈퇴일시',
+    `event_type` VARCHAR(10) NULL 
+                  COMMENT '트리거이벤트' COLLATE 'utf8mb4_general_ci',
+    `insdtm` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP() 
+                  COMMENT '로그등록일시',  
+    PRIMARY KEY (`idx`) USING BTREE
+)
+COLLATE='utf8mb4_general_ci'
+ENGINE=InnoDB
+;
+
+# P438: 업데이트 전의 데이터를 로그 테이블에 기록하는 AFTER UPDATE 트리거
+DELIMITER $$
+CREATE OR REPLACE
+       TRIGGER tg_members_update AFTER UPDATE
+                ON members FOR EACH ROW
+BEGIN
+    INSERT INTO members_log 
+           (memid, memname, passwd, 
+            passwdmdt, jumin, addr, birthday,
+            jobcd, mileage, stat, recommender, 
+            enterdtm, leavedtm, event_type )
+           VALUES (OLD.memid, OLD.memname, OLD.passwd, 
+                   OLD.passwdmdt, OLD.jumin, OLD.addr, OLD.birthday,
+                   OLD.jobcd, OLD.mileage, OLD.stat, OLD.recommender,
+                   OLD.enterdtm, OLD.leavedtm, 'UPDATE_OLD');
+END $$
+DELIMITER ;
+
+# P439: 업데이트 트리거 실행을 위한 테스트 데이터 입력
+INSERT INTO members (memid, memname, addr, birthday, jobcd) 
+       VALUES ('abcd', '로그테스트', '서울 용산', '1980-08-15', '3')
+
+# P439: 입력한 테스트 데이터 확인 
+SELECT memid, memname, addr, birthday, jobcd 
+    FROM members WHERE memid = 'abcd';
+
+# P440: 업데이트 트리거 실행을 위한 테스트 데이터 업데이트와 로그 기록 확인
+UPDATE members 
+    SET birthday = '1988-09-01' WHERE memid = 'abcd';
+
+SELECT memid, memname, addr, birthday, 
+       jobcd, enterdtm, event_type, insdtm 
+    FROM members_log;
+
+# P440: DELETE 로그 기록을 위한 AFTER DELETE 트리거 생성
+DELIMITER $$
+CREATE OR REPLACE
+       TRIGGER tg_members_delete AFTER DELETE 
+               ON members FOR EACH ROW
+BEGIN
+    INSERT INTO members_log 
+           (memid, memname, passwd, passwdmdt, 
+            jumin, addr, birthday, jobcd,
+            mileage, stat, recommender, 
+            enterdtm, leavedtm, event_type )
+          VALUES (OLD.memid, OLD.memname, OLD.passwd, OLD.passwdmdt, 
+                  OLD.jumin, OLD.addr, OLD.birthday, OLD.jobcd, 
+                  OLD.mileage, OLD.stat, OLD.recommender, 
+                  OLD.enterdtm, OLD.leavedtm, 'DELETE_OLD');
+
+END $$
+DELIMITER ;
+
+# P441: DELETE 트리거 실행을 위한 테스트 데이터 DELETE와 로그 기록 확인
+DELETE FROM members 
+    WHERE  memid = 'abcd';
+
+SELECT memid, memname, addr, birthday, 
+       jobcd, enterdtm, event_type, insdtm 
+    FROM members_log;
+
+# P442: 트리거를 이용한 실시간 마감 기능 구현
+DELIMITER $$
+CREATE OR REPLACE 
+    TRIGGER tg_order_d_insert AFTER INSERT 
+            ON  order_d  FOR EACH ROW
+BEGIN
+    # 지역변수 선언
+    -- `order_d` 테이블에 입력되는 `amt` 열 값을 
+    -- 저장하는 지역변수로 초기값은 0
+    DECLARE in_amt DECIMAL(7,0) DEFAULT 0;
+    -- 정상 주문금액을 저장하는 지역변수로 초기값 0
+    DECLARE wknamt DECIMAL(7,0) DEFAULT 0; 
+    -- 취소 주문금액을 저장하는 지역변수로 초기값 0
+    DECLARE wkcamt DECIMAL(7,0) DEFAULT 0;
+    DECLARE yymm   CHAR(7);    -- 주문년월을 저장하는 지역변수
+    DECLARE wkyn   CHAR(1);    -- 정상주문과 취소주문을 구분하는 지역변수
+    DECLARE wkcd   CHAR(5);    -- 상품코드를 저장하는 지역변수
+
+    # 트리거가 설정된 `order_d` 테이블에 입력되는 NEW.`orderno` 열과 
+    # `order_h` 테이블의 orderno가 같은 데이터 중에서  
+    # orddt 열의 ‘연-월’과 cancelyn 열 값을 조회하여 
+    # 지역변수 yymm, wkyn에 저장
+    SELECT LEFT(CONVERT(orddt, CHAR), 7), 
+           cancelyn 
+        INTO yymm, wkyn FROM order_h 
+        WHERE order_h.orderno = NEW.orderno;
+
+    # `order_d` 테이블이 입력되는 상품코드와 주문금액을 지역변수에 저장
+    SET wkcd   = NEW.goodscd; 
+    SET in_amt = NEW.amt;
+
+    # 정상주문이면 지역변수 in_amt의 값을 wknamt에 저장
+    IF wkyn = 'N' THEN   
+        SET wknamt = in_amt;
+    END IF;
+    # 취소주문이면 지역변수 in_amt의 값을 wkcamt에 저장
+    IF wkyn = 'Y' THEN 
+        SET wkcamt = in_amt;
+    END IF;
+
+    # 월 마감 테이블에서 해당 월, 해당 상품코드의 데이터 건수 확인, 1이면
+    # 즉, 마감 테이블에 데이터가 있으면 정상 주문금액 합계와 
+    # 취소 주문금액 합계를 기존의 금액과 각각 합산하여 UPDATE
+    # 마감 테이블에 데이터가 없으면 INSERT  
+    IF (SELECT COUNT(goodscd) FROM monthly_order_mst 
+           WHERE goodscd = wkcd AND ord_ym = yymm) = 1 THEN
+        UPDATE monthly_order_mst
+            SET Namt = Namt + wknamt, 
+                Camt = Camt + wkcamt 
+            WHERE goodscd = wkcd AND ord_ym = yymm;
+    ELSE 
+        INSERT INTO monthly_order_mst 
+               VALUES (wkcd, yymm, wknamt, wkcamt);
+    END IF;
+
+END $$
+DELIMITER ;
+
+# P443: `monthly_order_mst` 테이블의 현재 상태 확인
+SELECT * FROM monthly_order_mst;
+
+# P444: 실시간 로그 기능 확인을 위해 `order_d` 테이블에 데이터 추가 1과 마감 테이블 확인
+INSERT INTO order_d (orderno, goodscd, unitcd, unitprice, qty, amt)
+       VALUES ('202201003', 'GDS05', '02', 1000, 20, 20000);
+
+SELECT * FROM  monthly_order_mst;
+
+# P444: 실시간 로그 기능 확인을 위해 `order_d` 테이블에 데이터 추가 2와 마감 테이블 확인
+INSERT INTO order_d ( orderno, goodscd, unitcd, unitprice, qty, amt ) 
+       VALUES ('202202003', 'GDS05', '02', 1000, 20, 20000 );
+
+SELECT * FROM  monthly_order_mst;
+
+# P445: `order_d`테이블에 AFTER UPDATE 트리거 생성
+DELIMITER $$
+CREATE OR REPLACE 
+    TRIGGER tg_order_d_update AFTER UPDATE
+            ON  order_d  FOR EACH ROW
+BEGIN
+    # 지역변수 선언
+    -- `order_d` 테이블에 입력되는 `amt` 열 값의
+    -- 변경 전값과 변경 후 값을 저장하는 지역변수로 초기값 0
+    DECLARE old_amt DECIMAL(7,0) DEFAULT 0;
+    DECLARE new_amt DECIMAL(7,0) DEFAULT 0;
+    -- 정상 주문금액을 저장하는 지역변수로 초기값 0
+    DECLARE wknamt  DECIMAL(7,0) DEFAULT 0; 
+    -- 취소 주문금액을 저장하는 지역변수로 초기값 0
+    DECLARE wkcamt  DECIMAL(7,0) DEFAULT 0;
+    DECLARE yymm    CHAR(7);      -- 주문년월을 저장하는 지역변수
+
+    DECLARE wkyn    CHAR(1);      -- 정상주문과 취소주문을 구분하는 지역변수
+    DECLARE wkcd    CHAR(5);      -- 상품코드를 저장하는 지역변수
+
+    # 트리거가 설정된 `order_d` 테이블에 입력되는 NEW.`orderno` 열과 
+    # `order_h` 테이블의 orderno가 같은 데이터 중에서  
+    # orddt 열의 ‘연-월’과 cancelyn 열 값을 조회하여 
+    # 지역변수 yymm, wkyn에 저장
+    SELECT LEFT( CONVERT(orddt, CHAR), 7), cancelyn 
+        INTO yymm, wkyn FROM order_h 
+        WHERE order_h.orderno = NEW.orderno;
+
+    # 업데이트하려는 신규 데이터와 업데이트 이전 데이터 관리 
+    SET wkcd    = NEW.goodscd;    -- 신규 데이터의 상품코드 저장
+    SET new_amt = NEW.amt;        -- 신규 데이터의 주문금액 저장
+    SET old_amt = OLD.amt;        -- 업데이트 이전 데이터의 주문금액 저장
+
+    # 정상주문이면 업데이트하려는 신규 데이터의 주문금액에서 
+    # 업데이트 이전 데이터의 주문금액을 차감해서 지역변수 wknamt에 저장
+    IF wkyn = 'N' THEN     
+        SET wknamt = new_amt - old_amt;
+    END IF;
+
+    # 취소주문이면 업데이트하려는 신규 데이터의 주문금액에서 
+    # 업데이트 이전 데이터의 주문금액을 차감해서 지역변수 wkcamt에 저장
+    IF wkyn = 'Y' THEN 
+        SET wkcamt = new_amt - old_amt;
+    END IF;
+    # 취소 주문금액 합계를 기존의 금액과 각각 합산하여 update
+    # 월 마감 테이블에 데이터에서 해당 데이터의 
+    # 정상 주문금액과 취소 주문금액을 기존 금액과 각각 합산하여 update
+    UPDATE `monthly_order_mst`
+        SET NAmt = Namt + wknamt, 
+            CAmt = CAmt + wkcamt 
+        WHERE goodscd = wkcd AND ord_ym = yymm;
+END $$
+DELIMITER ;
+
+# P447: 업데이트 트리거 실행을 위한 데이터 업데이트 
+UPDATE order_d 
+    SET qty = 15, amt = 15000
+    WHERE orderno = '202201003' AND goodscd = 'GDS05';
+
+SELECT * FROM  monthly_order_mst;
+
+
+# P449: 저장 함수 생성 권한 확인
+SHOW VARIABLES  
+    WHERE variable_name = '%log_bin%';
+
+# P450: 저장 함수: 생성 권한 OFF 일 때 
+DELIMITER $$
+CREATE OR REPLACE 
+    FUNCTION f_calcPlus(val1 INT, val2 INT) # 함수의 이름과 
+                                            # 매개 변수 이름, 데이터 유형 
+        RETURNS INT                         # 반환하는 결과의 데이터 유형
+BEGIN
+    RETURN  val1 + val2;     # 두 개의 매개 변수를 덧셈하여 반환
+END $$
+DELIMITER ;
+
+# P450: 저장 함수 정보 확인
+SELECT db, name, type, specific_name 
+    FROM mysql.proc 
+    WHERE db = 'kamebook' OR db = 'mysql';
+
+# P451: 저장 함수 호출: 
+USE kamebook;                   # 명시적으로 데이터베이스 사용
+SELECT f_calcPlus(100, 200);    # 저장 함수 호출
+
+# P451: 저장 함수 호출: 
+USE kamebook;                         # 명시적으로 데이터베이스 사용
+SELECT mysql.f_calcPlus(100, 200);    # 함수 소유자인 데이터베이스 지정하여 저장 함수 호출
+
+# P452: 명시적으로 사용할 데이터베이스 지정후 저장 함수 정의 
+USE kamebook;          # 명시적으로 데이터베이스 사용
+# 지정한 데이터베이스 내에 저장 함수 등록을 위해 시스템 변수 값 변경 
+SET GLOBAL log_bin_trust_function_creators = 0; 
+
+# 저장 함수 정의
+DELIMITER $$
+CREATE OR REPLACE 
+    FUNCTION f_calcPlus(val1 INT, val2 INT) # 함수의 이름과
+                                            # 매개 변수 이름, 데이터 유형
+        RETURNS INT                         # 반환하는 결과의 데이터 유형
+BEGIN
+    RETURN  val1 + val2;      # 두 개의 매개 변수를 덧셈하여 반환
+END $$
+DELIMITER ;
+
+# 저장 함수 호출 
+SELECT f_calcPlus(100, 200);  # 명시적으로 지정된 데이터베이스의 개체로 등록된
+                              # 저장 함수 호출
+
+# P453: f_clasPlus 함수 재정의
+DELIMITER $$
+CREATE OR REPLACE 
+    FUNCTION f_calcPlus(val1 INT, val2 INT)
+        RETURNS INT NO SQL DETERMINISTIC
+
+    RETURN val1 + val2;
+$$;
+DELIMITER ;
+
+# P454: 저장 함수 정보 확인
+SHOW FUNCTION STATUS WHERE `db` = 'kamebook';
+
+# P454: 나이 계산 저장 함수
+DELIMITER $$
+CREATE OR REPLACE 
+    FUNCTION f_calcAge(indate CHAR(10))
+        RETURNS DECIMAL(4, 0) NO SQL NOT DETERMINISTIC
+BEGIN
+    # 지역변수 선언
+    DECLARE curr_date CHAR(10);
+    DECLARE calc_age  DECIMAL(4, 0);
+
+    # CURDATE() 함수로 현재 일자를 확인하여 문자열로 데이터 유형 변경
+    # ‘yyyy-mm-dd’ 형식이 된다. 
+    SET curr_date = CONVERT(CURDATE(), CHAR);
+    # 입력 매개 변수 값에서 오른쪽 5글자와 현재 일자의 오른쪽 5글자 비교하여
+    # 나이를 계산하고 변수 calc_age를 저장한다. 
+    IF (RIGHT(indate, 5) < RIGHT(curr_date, 5)) THEN
+        -- 생일이 지나지 않은 경우 
+        -- 현재 일자의 왼쪽 4글자, 즉 현재 연도에서 입력된 연도를 뺄셈하여 
+        -- 나이를 계산하고 -1
+        SET calc_age = LEFT(curr_date, 4) - LEFT(indate, 4) - 1;
+    ELSE
+        -- 생일이 지난 경우
+        -- 현재 일자의 왼쪽 4글자, 즉 현재 연도에서 입력된 연도를 뺄셈하여 
+        -- 나이를 계산
+        SET calc_age = LEFT(curr_date, 4) - LEFT(indate, 4);
+    END IF;   	
+
+    RETURN calc_age;
+END $$;
+DELIMITER ;
+
+# P455: 나이 계산 저장 함수 사용
+SELECT f_calcAge('2000-01-01'), -- 생일이 지나지 않은 경우, 결과는 21
+       f_calcAge('2000-04-15'), -- 생일인 경우, 결과는 22
+       f_calcAge('2000-04-16'); -- 생일이 지난 경우, 결과는 22
+
+
+# P456: `memid`를 입력 인수로 사용하여 `memname` 열의 값을 반환하는 함수
+DELIMITER $$
+CREATE OR REPLACE 
+    FUNCTION f_membername(in_id VARCHAR(10))
+        RETURNS VARCHAR(20) CONTAINS SQL DETERMINISTIC
+
+BEGIN
+    DECLARE nm VARCHAR(20);
+    SELECT memname INTO nm FROM members WHERE memid = in_id;
+
+    RETURN nm;
+END $$;
+DELIMITER ;
+
+# P456: f_membername 함수 사용
+SELECT orderno, memid, f_membername(memid) 
+    FROM order_h;
+
